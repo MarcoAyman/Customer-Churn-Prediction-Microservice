@@ -35,7 +35,7 @@ import {
 } from '../data/mockData'
 
 /* Change to false when FastAPI is running */
-const MOCK_MODE = true
+const MOCK_MODE = false
 
 /* ── HELPER: create a fake async function for mock mode ─────────────────── */
 /* Returns a Promise that resolves with `data` after a brief delay

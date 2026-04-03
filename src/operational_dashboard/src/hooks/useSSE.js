@@ -30,7 +30,7 @@ import { MOCK_INITIAL_EVENTS } from '../data/mockData'
 
 /* Set to true during development when FastAPI is not running yet.
    When false, the hook connects to the real SSE endpoint. */
-const MOCK_MODE = true
+const MOCK_MODE = false
 
 /* FastAPI SSE endpoint — will be used when MOCK_MODE = false */
 

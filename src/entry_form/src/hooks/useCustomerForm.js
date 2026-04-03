@@ -31,7 +31,7 @@ import { FORM_FIELDS, INITIAL_FORM_STATE } from '../data/formConfig'
 
 /* ── MOCK MODE ───────────────────────────────────────────────────────────── */
 /* Set to false when FastAPI is running and /api/v1/customers/register exists */
-const MOCK_MODE = true
+const MOCK_MODE = false
 
 /* Simulated network delay in mock mode — makes loading state visible */
 const MOCK_DELAY_MS = 900
