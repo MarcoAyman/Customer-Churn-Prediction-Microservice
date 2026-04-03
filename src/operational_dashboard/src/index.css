@@ -1,0 +1,162 @@
+/*
+  src/index.css
+  ─────────────────────────────────────────────────────────────────────────────
+  GLOBAL STYLES AND CSS DESIGN SYSTEM
+
+  This file defines:
+    1. CSS custom properties (variables) — the entire colour palette,
+       typography scale, and spacing tokens
+    2. A minimal CSS reset — removes browser defaults that cause layout issues
+    3. Base element styles — body, scrollbars, selection
+
+  WHY CSS VARIABLES?
+    Every component imports this file and reads from these variables.
+    If you want to change the primary accent colour, change ONE variable here.
+    All 15+ components that use it update automatically.
+
+  DESIGN LANGUAGE:
+    Dark theme. Deep navy backgrounds.
+    Monospace font for all numbers — aligns decimal points in tables.
+    Amber for warnings. Red for danger. Green for healthy.
+    Subtle borders (1px, low opacity) instead of heavy shadows.
+  ─────────────────────────────────────────────────────────────────────────────
+*/
+
+/* ─── CSS CUSTOM PROPERTIES (DESIGN TOKENS) ─────────────────────────────── */
+:root {
+  /* Background layers — three levels of depth */
+  --bg-base:      #0a0d14;   /* darkest — page background */
+  --bg-surface:   #111520;   /* cards, panels */
+  --bg-elevated:  #181d2e;   /* hover states, inner panels */
+
+  /* Border colours — kept very subtle so they don't compete with content */
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-strong:  rgba(255, 255, 255, 0.18);
+
+  /* Text colours — four levels of hierarchy */
+  --text-primary:   #f0f4ff;  /* headlines, important numbers */
+  --text-secondary: #8892aa;  /* labels, descriptions */
+  --text-tertiary:  #4a5568;  /* placeholder text, disabled states */
+  --text-inverse:   #0a0d14;  /* text on light coloured backgrounds */
+
+  /* Semantic colours — HIGH/MEDIUM/LOW risk + system states */
+  --color-high:     #ef4444;  /* HIGH risk — danger red */
+  --color-high-bg:  rgba(239, 68, 68, 0.10);
+  --color-high-border: rgba(239, 68, 68, 0.25);
+
+  --color-medium:   #f59e0b;  /* MEDIUM risk — amber warning */
+  --color-medium-bg: rgba(245, 158, 11, 0.10);
+  --color-medium-border: rgba(245, 158, 11, 0.25);
+
+  --color-low:      #10b981;  /* LOW risk — healthy green */
+  --color-low-bg:   rgba(16, 185, 129, 0.10);
+  --color-low-border: rgba(16, 185, 129, 0.25);
+
+  --color-onboard:  #3b82f6;  /* ONBOARDING — info blue */
+  --color-onboard-bg: rgba(59, 130, 246, 0.10);
+
+  --color-drift-critical: #ef4444;
+  --color-drift-warning:  #f59e0b;
+  --color-drift-none:     #10b981;
+
+  /* Accent — the brand colour used for active states and highlights */
+  --color-accent:    #6366f1;  /* indigo */
+  --color-accent-bg: rgba(99, 102, 241, 0.12);
+
+  /* Live / SSE indicator */
+  --color-live:     #10b981;
+
+  /* Typography */
+  --font-display: 'Syne', sans-serif;       /* headings, large numbers */
+  --font-body:    'Inter', sans-serif;       /* labels, body text */
+  --font-mono:    'JetBrains Mono', monospace; /* all numeric values */
+
+  /* Spacing scale */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Transition */
+  --transition-fast: 150ms ease;
+  --transition-med:  250ms ease;
+}
+
+/* ─── MINIMAL RESET ─────────────────────────────────────────────────────── */
+
+/* Box sizing: include padding and border in element width/height */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── BASE STYLES ───────────────────────────────────────────────────────── */
+
+html {
+  font-size: 16px;
+  /* Prevent layout shift when scrollbar appears/disappears */
+  scrollbar-gutter: stable;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-base);
+  /* Improve font rendering on dark backgrounds */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar — subtle, matches dark theme */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Text selection colour */
+::selection {
+  background: var(--color-accent-bg);
+  color: var(--text-primary);
+}
+
+/* Remove default list styles */
+ul, ol {
+  list-style: none;
+}
+
+/* Remove default button styles */
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Monospace for all numbers by default */
+.mono {
+  font-family: var(--font-mono);
+}

@@ -1,0 +1,66 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# render.yaml — Render infrastructure-as-code configuration
+#
+# HOW TO USE:
+#   Option A (recommended):
+#     Push this file to GitHub. In Render dashboard → New → Blueprint.
+#     Render reads this file and creates the service automatically.
+#
+#   Option B (manual):
+#     Create a new Web Service in Render dashboard.
+#     Point it to your GitHub repo.
+#     Set environment variables manually in the Render dashboard.
+#
+# IMPORTANT — SECRETS:
+#   DATABASE_URL and ADMIN_API_KEY are marked as generateValue: false.
+#   You must set their real values in the Render dashboard manually.
+#   NEVER put real secrets in this file — it is committed to git.
+# ══════════════════════════════════════════════════════════════════════════════
+
+services:
+  - type: web                          # web service = HTTP server
+    name: churnguard-api               # display name in Render dashboard
+    runtime: docker                    # tells Render to use the Dockerfile
+    dockerfilePath: ./Dockerfile       # path to Dockerfile in the repo
+
+    # ── Deploy settings ────────────────────────────────────────────────────
+    # autodeploy: true = Render rebuilds and redeploys on every push to main
+    autoDeploy: true
+
+    # ── Health check ───────────────────────────────────────────────────────
+    # Render sends a GET to this path after each deploy.
+    # If it returns non-200, Render marks the deploy as failed.
+    healthCheckPath: /api/v1/health
+
+    # ── Environment variables ──────────────────────────────────────────────
+    # These are injected as environment variables into the running container.
+    # Values marked with 'sync: false' must be set manually in Render dashboard.
+    envVars:
+
+      # Supabase connection string — MUST use port 6543 (pooler)
+      # Set this in Render dashboard: Settings → Environment
+      - key: DATABASE_URL
+        sync: false   # do not sync from this file — set manually for security
+
+      # Admin API key — used to protect /api/v1/admin/* endpoints
+      # Set a strong random value: openssl rand -hex 32
+      - key: ADMIN_API_KEY
+        sync: false   # set manually in Render dashboard
+
+      # CORS origins — your Vercel deployment URLs
+      # Example: https://churnguard-dashboard.vercel.app,https://churnguard-entry.vercel.app
+      - key: CORS_ORIGINS
+        value: "http://localhost:3000,http://localhost:3001"   # update for production
+
+      # Environment name — tells the API it is running in production
+      - key: ENVIRONMENT
+        value: production
+
+      # HuggingFace token — for downloading model artifacts
+      # Set manually in Render dashboard when model is ready
+      - key: HF_TOKEN
+        sync: false
+
+      # HuggingFace repo path — set when model is trained and pushed
+      - key: HUGGINGFACE_REPO
+        value: ""   # fill in after training: "your-username/churnguard-model"

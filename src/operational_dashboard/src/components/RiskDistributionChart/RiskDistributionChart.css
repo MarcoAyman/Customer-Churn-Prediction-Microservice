@@ -1,0 +1,114 @@
+/*
+  src/components/RiskDistributionChart/RiskDistributionChart.css
+*/
+
+.risk-chart__panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── HEADER ──────────────────────────────────────────────────────────────── */
+.risk-chart__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.risk-chart__title {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-tertiary);
+}
+
+.risk-chart__badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+}
+
+/* ── CHART BODY ──────────────────────────────────────────────────────────── */
+.risk-chart__body {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+}
+
+/* ── CUSTOM TOOLTIP ──────────────────────────────────────────────────────── */
+.risk-chart__tooltip {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.risk-chart__tooltip-tier {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.risk-chart__tooltip-count {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+/* ── LEGEND ──────────────────────────────────────────────────────────────── */
+.risk-chart__legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.risk-chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.risk-chart__legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── SKELETON ────────────────────────────────────────────────────────────── */
+.risk-chart__skeleton {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.risk-chart__skeleton-bar {
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--border-subtle) 25%, var(--border-default) 50%, var(--border-subtle) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

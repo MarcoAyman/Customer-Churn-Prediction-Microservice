@@ -1,0 +1,37 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# requirements.txt — Python dependencies for the ChurnGuard API
+#
+# Install: pip install -r requirements.txt
+#
+# SECTIONS:
+#   API core          — FastAPI and Uvicorn
+#   Database          — psycopg2 for PostgreSQL connection
+#   Environment       — python-dotenv for .env file loading
+#   Validation        — pydantic-settings for typed settings
+#   ML (future)       — libraries for model inference (commented until needed)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── API CORE ──────────────────────────────────────────────────────────────────
+fastapi==0.110.0             # web framework — routing, dependency injection, validation
+uvicorn[standard]==0.27.1    # ASGI server — runs FastAPI; [standard] adds websocket support
+python-multipart==0.0.9      # required for FastAPI file/form uploads
+
+# ── DATABASE ──────────────────────────────────────────────────────────────────
+psycopg2-binary==2.9.9       # PostgreSQL driver — binary version (no build tools needed)
+
+# ── ENVIRONMENT AND SETTINGS ──────────────────────────────────────────────────
+python-dotenv==1.0.1         # reads .env file into os.environ
+pydantic-settings==2.2.1     # typed settings class that reads from environment
+
+# ── PYDANTIC (FastAPI dependency) ─────────────────────────────────────────────
+pydantic==2.6.3              # data validation — models/customer.py schemas
+
+# ── DATA PROCESSING ───────────────────────────────────────────────────────────
+pandas==2.2.1                # used by stage1_clean.py (called by customer_service)
+numpy==1.26.4                # used by stage2_features.py (ML pipeline)
+
+# ── ML MODEL INFERENCE (uncomment when model is trained and deployed) ─────────
+# scikit-learn==1.4.1        # preprocessor.pkl requires this to load
+# xgboost==2.0.3             # model.pkl requires this to load
+# shap==0.44.1               # SHAP values for explainability in predictions
+# huggingface-hub==0.21.4    # download model artifacts from HuggingFace

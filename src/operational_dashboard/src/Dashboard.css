@@ -1,0 +1,65 @@
+/*
+  src/Dashboard.css
+  ─────────────────────────────────────────────────────────────────────────────
+  Layout for the Dashboard orchestrator.
+  Controls the two-column grid and spacing between zones.
+  ─────────────────────────────────────────────────────────────────────────────
+*/
+
+/* ── DASHBOARD ROOT ──────────────────────────────────────────────────────── */
+.dashboard {
+  min-height: 100vh;
+  background: var(--bg-base);
+  /* HealthBar is sticky — it sits outside the normal flow */
+}
+
+/* ── ZONE 3: MAIN CONTENT AREA ───────────────────────────────────────────── */
+.dashboard__main {
+  display: grid;
+  /* Left col takes 2/3 width, right col takes 1/3 */
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 20px 24px;
+}
+
+/* ── LEFT COLUMN — charts and tables stacked vertically ─────────────────── */
+.dashboard__left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── CHART ROW — two charts side by side ────────────────────────────────── */
+.dashboard__chart-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+/* ── RIGHT COLUMN — event feed fills full height ────────────────────────── */
+.dashboard__right {
+  /* The event feed stretches to match the left column height */
+  align-self: stretch;
+}
+
+/* ── RESPONSIVE: collapse to single column on narrow screens ─────────────── */
+@media (max-width: 1024px) {
+  .dashboard__main {
+    grid-template-columns: 1fr;
+  }
+
+  /* On small screens, event feed has a fixed height instead of full height */
+  .dashboard__right {
+    align-self: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard__chart-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard__main {
+    padding: 12px;
+  }
+}

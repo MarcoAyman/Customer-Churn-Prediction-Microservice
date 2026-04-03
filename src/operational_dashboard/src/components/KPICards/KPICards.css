@@ -1,0 +1,113 @@
+/*
+  src/components/KPICards/KPICards.css
+*/
+
+/* ── GRID — four equal columns ───────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  /* Four equal columns. minmax(0,1fr) prevents overflow on small screens. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 16px 20px 0;
+}
+
+/* ── SINGLE CARD ─────────────────────────────────────────────────────────── */
+.kpi-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  /* Left accent border — changes colour per variant */
+  border-left: 3px solid transparent;
+  transition: border-color var(--transition-fast),
+              background var(--transition-fast);
+}
+
+.kpi-card:hover {
+  background: var(--bg-elevated);
+}
+
+/* Variant: danger (HIGH risk card) */
+.kpi-card--danger {
+  border-left-color: var(--color-high);
+  background: linear-gradient(135deg, var(--bg-surface) 60%, var(--color-high-bg));
+}
+
+/* Variant: success (Retained card) */
+.kpi-card--success {
+  border-left-color: var(--color-low);
+  background: linear-gradient(135deg, var(--bg-surface) 60%, var(--color-low-bg));
+}
+
+/* Variant: warning (Avg Score card) */
+.kpi-card--warning {
+  border-left-color: var(--color-medium);
+  background: linear-gradient(135deg, var(--bg-surface) 60%, var(--color-medium-bg));
+}
+
+/* Variant: default (Total Customers card) */
+.kpi-card--default {
+  border-left-color: var(--color-accent);
+}
+
+/* ── LABEL ───────────────────────────────────────────────────────────────── */
+.kpi-card__label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+/* ── VALUE — the big number ─────────────────────────────────────────────── */
+.kpi-card__value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+  /* tabular-nums prevents digits from shifting as values update */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Value colour per variant */
+.kpi-card--danger  .kpi-card__value { color: var(--color-high); }
+.kpi-card--success .kpi-card__value { color: var(--color-low); }
+.kpi-card--warning .kpi-card__value { color: var(--color-medium); }
+
+/* ── SUBTEXT ─────────────────────────────────────────────────────────────── */
+.kpi-card__subtext {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+}
+
+/* ── SKELETON SHIMMER — while data loads ─────────────────────────────────── */
+.kpi-card__skeleton {
+  height: 28px;
+  width: 60%;
+  background: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  /* Shimmer animation: gradient sweeps from left to right */
+  background: linear-gradient(
+    90deg,
+    var(--border-subtle) 25%,
+    var(--border-default) 50%,
+    var(--border-subtle) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── RESPONSIVE — stack to 2 columns on narrow screens ──────────────────── */
+@media (max-width: 900px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

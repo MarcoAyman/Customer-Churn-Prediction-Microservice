@@ -1,0 +1,74 @@
+/*
+  src/components/ChurnTrendChart/ChurnTrendChart.css
+*/
+
+.trend-chart__panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trend-chart__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.trend-chart__title {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-tertiary);
+}
+
+.trend-chart__badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+}
+
+.trend-chart__body {
+  min-height: 180px;
+}
+
+.trend-chart__footnote {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+/* Tooltip */
+.trend-chart__tooltip {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.trend-chart__tooltip-date   { font-size: 10px; color: var(--text-tertiary); }
+.trend-chart__tooltip-value  { font-family: var(--font-mono); font-size: 13px; color: var(--color-high); }
+.trend-chart__tooltip-scored { font-size: 11px; color: var(--text-secondary); }
+.trend-chart__tooltip-drift  { font-size: 10px; color: var(--color-medium); margin-top: 2px; }
+
+/* Skeleton */
+.trend-chart__skeleton {
+  height: 180px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--border-subtle) 25%, var(--border-default) 50%, var(--border-subtle) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
