@@ -106,12 +106,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,   # from .env: CORS_ORIGINS=http://...
-    allow_credentials=False,   # no cookies — header auth only
-    allow_methods=["GET", "POST", "PUT", "OPTIONS"],   # OPTIONS required for preflight
-    allow_headers=["Content-Type", "X-Admin-Key"],     # X-Admin-Key must be explicitly listed
+    allow_origins=["*"],  # This allows all domains to talk to your API
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
 logger.info(f"CORS configured for origins: {settings.cors_origins_list}")
 
 
