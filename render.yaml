@@ -50,7 +50,8 @@ services:
       # CORS origins — your Vercel deployment URLs
       # Example: https://churnguard-dashboard.vercel.app,https://churnguard-entry.vercel.app
       - key: CORS_ORIGINS
-        value: "http://localhost:3000,http://localhost:3001"   # update for production
+  	value: "https://customer-churn-prediction-operation.vercel.app,https://customer-churn-prediction-entry-for.vercel.app"
+
 
       # Environment name — tells the API it is running in production
       - key: ENVIRONMENT
