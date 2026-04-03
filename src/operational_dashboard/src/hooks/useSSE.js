@@ -4,94 +4,84 @@
   CUSTOM HOOK: useSSE
   Manages a Server-Sent Events (SSE) connection to the FastAPI backend.
 
-  WHY A CUSTOM HOOK?
-    The SSE connection logic (open, listen, reconnect, close) is the same
-    regardless of which component uses it. Extracting it into a hook means:
-      - The EventFeed component just calls useSSE('/api/v1/admin/events')
-      - The HealthBar component calls useSSE() for the live status dot
-      - Neither component knows anything about EventSource or reconnection
+  FIX APPLIED:
+    The browser's EventSource API cannot send custom HTTP headers.
+    This is a browser spec limitation — not a bug in our code.
 
-  HOW SSE WORKS:
-    1. Browser opens a GET request to /api/v1/admin/events
-    2. FastAPI keeps the connection open and pushes events as text
-    3. EventSource fires onmessage for each event
-    4. If the connection drops, EventSource auto-reconnects (built-in)
+    BEFORE (broken):
+      const es = new EventSource(SSE_ENDPOINT)
+      // X-Admin-Key header never reaches the server → 403
 
-  WHEN BACKEND IS READY:
-    Change MOCK_MODE to false. The hook will connect to the real FastAPI endpoint.
-    The component code does not change at all.
+    AFTER (fixed):
+      const es = new EventSource(`${SSE_ENDPOINT}?admin_key=${ADMIN_KEY}`)
+      // Admin key travels in the URL query param → FastAPI accepts it
+
+  The backend event.py route was updated to accept ?admin_key= for this reason.
   ─────────────────────────────────────────────────────────────────────────────
 */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { MOCK_INITIAL_EVENTS } from '../data/mockData'
 
-/* ── CONFIGURATION ───────────────────────────────────────────────────────── */
+// ── CONFIGURATION ─────────────────────────────────────────────────────────────
 
-/* Set to true during development when FastAPI is not running yet.
-   When false, the hook connects to the real SSE endpoint. */
+// Set to false when FastAPI is running and reachable
 const MOCK_MODE = false
 
-/* FastAPI SSE endpoint — will be used when MOCK_MODE = false */
-
+// Base API URL from Vite environment variable
+// Falls back to empty string for same-origin requests in development
 const BASE_URL = import.meta.env.VITE_API_URL || ''
-const SSE_ENDPOINT = `${BASE_URL}/api/v1/admin/events`
 
-/* Maximum events to keep in the feed before removing oldest ones */
+// Admin API key from Vite environment variable
+// Sent as query param because EventSource cannot send custom headers
+const ADMIN_KEY = import.meta.env.VITE_ADMIN_KEY || ''
+
+// SSE endpoint — admin_key appended as query param (browser spec requirement)
+const SSE_ENDPOINT = `${BASE_URL}/api/v1/admin/events?admin_key=${ADMIN_KEY}`
+
+// Maximum events to keep in the feed before dropping oldest
 const MAX_EVENTS = 50
 
-/* How long to wait before attempting to reconnect after a connection error */
+// Seconds to wait before reconnecting after a connection error
 const RECONNECT_DELAY_MS = 3000
 
 
-/* ── HOOK ────────────────────────────────────────────────────────────────── */
+// ── HOOK ──────────────────────────────────────────────────────────────────────
 
-/*
-  useSSE()
-  ─────────────────────────────────────────────────────────────────────────────
-  Returns:
-    events       — array of event objects, newest first (for display in feed)
-    isConnected  — boolean — true when SSE connection is open
-    status       — 'connecting' | 'connected' | 'error' | 'mock'
-    clearEvents  — function to empty the event list
-  ─────────────────────────────────────────────────────────────────────────────
-*/
 export function useSSE() {
-  /* events: array of event objects shown in the live feed */
-  const [events, setEvents] = useState(MOCK_INITIAL_EVENTS)
+  // events: array of event objects, newest first
+  const [events, setEvents] = useState(MOCK_MODE ? MOCK_INITIAL_EVENTS : [])
 
-  /* connection status for the health bar indicator */
+  // SSE connection status
   const [status, setStatus] = useState(MOCK_MODE ? 'mock' : 'connecting')
 
-  /* ref to the EventSource instance — ref so it persists across renders
-     without triggering re-renders when it changes */
+  // Ref to the EventSource instance — persists across renders without re-render
   const eventSourceRef = useRef(null)
 
-  /* Adds a new event to the front of the array.
-     Trims the array to MAX_EVENTS to prevent memory growth. */
+  // Adds a new event to the front of the array and trims to MAX_EVENTS
   const addEvent = useCallback((newEvent) => {
     setEvents(prev => {
-      /* Insert at front (newest first), trim to max length */
       const updated = [newEvent, ...prev]
       return updated.slice(0, MAX_EVENTS)
     })
   }, [])
 
-  /* Empties the event list — used by a "clear feed" button */
+  // Empties the event list — for the "clear" button
   const clearEvents = useCallback(() => {
     setEvents([])
   }, [])
 
 
   useEffect(() => {
-    /* ── MOCK MODE ── */
+
+    // ── MOCK MODE ─────────────────────────────────────────────────────────────
     if (MOCK_MODE) {
-      /* Simulate incoming SSE events every 8 seconds to show the feed is live */
+      // Simulate incoming SSE events every 8 seconds during development
       const simulatedEvents = [
-        { event_type: 'ping',           payload: {},                                    created_at: new Date().toISOString() },
-        { event_type: 'new_customer',   payload: { customer_id: '#50999', city_tier: 2 }, created_at: new Date().toISOString() },
+        { event_type: 'ping',           payload: {},                                         created_at: new Date().toISOString() },
+        { event_type: 'new_customer',   payload: { customer_id: '#50999', city_tier: 2 },    created_at: new Date().toISOString() },
         { event_type: 'high_churn_alert', payload: { customer_id: '#50500', score: 1.0, top_reason: 'Complaint raised' }, created_at: new Date().toISOString() },
-        { event_type: 'ping',           payload: {},                                    created_at: new Date().toISOString() },
+        { event_type: 'ping',           payload: {},                                         created_at: new Date().toISOString() },
       ]
       let simulatedIndex = 0
       const interval = setInterval(() => {
@@ -100,33 +90,42 @@ export function useSSE() {
         simulatedIndex++
       }, 8000)
 
-      /* Cleanup: stop simulation when component unmounts */
       return () => clearInterval(interval)
     }
 
 
-    /* ── REAL SSE MODE (when MOCK_MODE = false) ── */
+    // ── REAL SSE MODE ─────────────────────────────────────────────────────────
+
+    // Validate that ADMIN_KEY is set before attempting connection
+    // If empty, the server will return 403 and we reconnect forever pointlessly
+    if (!ADMIN_KEY) {
+      console.error(
+        '[SSE] VITE_ADMIN_KEY is not set. ' +
+        'Add it to your Vercel environment variables and redeploy.'
+      )
+      setStatus('error')
+      return
+    }
+
     function connect() {
       setStatus('connecting')
 
-      /* EventSource: browser's built-in SSE client.
-         Opens a GET connection to the endpoint and auto-reconnects. */
-      const es = new EventSource(SSE_ENDPOINT, {
-        withCredentials: false  /* set to true if your API requires cookies */
-      })
+      // EventSource: browser's built-in SSE client.
+      // We append ?admin_key= because EventSource cannot send custom headers.
+      // The URL is built at the top of this file.
+      console.log(`[SSE] Connecting to: ${BASE_URL}/api/v1/admin/events?admin_key=****`)
+      const es = new EventSource(SSE_ENDPOINT)
       eventSourceRef.current = es
 
-      /* onopen: called when the SSE connection is first established */
+      // onopen: SSE connection established successfully
       es.onopen = () => {
         setStatus('connected')
-        console.log('[SSE] Connected to', SSE_ENDPOINT)
+        console.log('[SSE] Connected successfully')
       }
 
-      /* onmessage: called for every 'data: ...' line the server sends.
-         FastAPI sends JSON-serialised event objects. */
+      // onmessage: called for every "data: ...\n\n" chunk from FastAPI
       es.onmessage = (event) => {
         try {
-          /* Parse the JSON string sent by FastAPI */
           const parsed = JSON.parse(event.data)
           addEvent(parsed)
         } catch (err) {
@@ -134,26 +133,20 @@ export function useSSE() {
         }
       }
 
-      /* onerror: called when the connection drops or the server sends an error.
-         EventSource will try to reconnect automatically, but we set our own
-         delay via a manual close + setTimeout to avoid hammering the server. */
+      // onerror: connection dropped or server returned error
       es.onerror = (err) => {
         setStatus('error')
-        console.error('[SSE] Connection error:', err)
-
-        /* Close the broken connection so EventSource stops auto-retrying */
+        console.error('[SSE] Connection error. Will retry in', RECONNECT_DELAY_MS, 'ms')
         es.close()
         eventSourceRef.current = null
-
-        /* Reconnect after RECONNECT_DELAY_MS milliseconds */
+        // Wait before reconnecting — avoids hammering a sleeping Render server
         setTimeout(connect, RECONNECT_DELAY_MS)
       }
     }
 
     connect()
 
-    /* Cleanup: close the EventSource when the component unmounts.
-       Without this, the connection stays open forever even after navigating away. */
+    // Cleanup: close connection when component unmounts
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close()
@@ -161,7 +154,7 @@ export function useSSE() {
         console.log('[SSE] Connection closed (component unmounted)')
       }
     }
-  }, [addEvent]) /* addEvent is stable (useCallback), so this only runs once */
+  }, [addEvent])
 
 
   return {

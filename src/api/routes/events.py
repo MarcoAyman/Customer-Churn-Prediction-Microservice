@@ -3,146 +3,132 @@ src/api/routes/events.py
 ══════════════════════════════════════════════════════════════════════════════
 EVENTS ROUTER — Server-Sent Events streaming endpoint.
 
-ENDPOINT:
-  GET /api/v1/admin/events
-    → Opens a persistent SSE connection
-    → Streams events from the SSEService queue as they arrive
-    → Sends a keepalive ping every 30s to prevent Render from closing the connection
-    → Used by: src/operational_dashboard (the EventFeed component via useSSE hook)
+FIX APPLIED:
+  The browser's EventSource API cannot send custom HTTP headers.
+  This is a browser spec limitation — not a code bug.
 
-HOW SSE WORKS (technical):
-  1. Browser calls GET /api/v1/admin/events
-  2. FastAPI keeps the HTTP response open (does not close it)
-  3. FastAPI yields chunks of text in the format:
-       data: {"event_type": "new_customer", ...}\n\n
-  4. Browser's EventSource fires onmessage for each \n\n-terminated chunk
-  5. Connection stays open until the browser closes it or the server restarts
+  Solution: accept the admin key as a URL query parameter for SSE only.
+  The header-based auth (verify_admin dependency) is used everywhere else.
 
-WHY StreamingResponse AND NOT WebSocket?
-  SSE is one-directional: server → client.
-  The dashboard only needs to RECEIVE events, never send them.
-  SSE is simpler than WebSocket, works through HTTP/1.1,
-  and auto-reconnects natively in the browser.
-  WebSocket would add complexity for no benefit here.
+  SSE clients connect as:
+    GET /api/v1/admin/events?admin_key=YOUR_ADMIN_KEY
 ══════════════════════════════════════════════════════════════════════════════
 """
 
 import json
 import logging
+import secrets
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 
-from src.api.dependencies import verify_admin
+from src.api.config import get_settings
 from src.api.services.sse_service import sse_service
 
 logger = logging.getLogger(__name__)
 
+# NOTE: We do NOT add Depends(verify_admin) to this router
+# because EventSource cannot send the X-Admin-Key header.
+# Authentication is handled manually inside the route via query param.
 router = APIRouter(
     prefix="/admin",
     tags=["SSE Events"],
-    dependencies=[Depends(verify_admin)],
 )
+
+settings = get_settings()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# GET /admin/events — the SSE streaming endpoint
+# GET /admin/events — SSE streaming endpoint
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get(
     "/events",
     summary="SSE event stream for the live dashboard feed",
-    description="""
-    Opens a Server-Sent Events (SSE) connection.
-    The client receives real-time events as they occur:
-    - `new_customer`: a customer registered via the entry form
-    - `batch_completed`: a batch scoring run finished
-    - `high_churn_alert`: a customer crossed the HIGH risk threshold
-    - `drift_alert`: feature drift PSI exceeded 0.20
-    - `model_promoted`: a new model version went to production
-    - `ping`: keepalive (every 30s, prevents Render connection timeout)
-
-    **Used by**: `useSSE.js` hook in the operational dashboard.
-    """,
-    # Tell OpenAPI this endpoint returns a stream, not JSON
     response_class=StreamingResponse,
 )
-async def stream_sse_events() -> StreamingResponse:
+async def stream_sse_events(
+    # Admin key passed as a query parameter because EventSource
+    # cannot send custom HTTP headers — browser spec limitation.
+    # Example: GET /api/v1/admin/events?admin_key=abc123
+    admin_key: str = Query(
+        default=None,
+        alias="admin_key",
+        description="Admin API key. Required. Passed as query param because EventSource cannot send headers.",
+    )
+) -> StreamingResponse:
     """
-    Open a persistent SSE connection and stream events.
+    Open a persistent SSE connection and stream live events.
 
-    Returns a StreamingResponse with Content-Type: text/event-stream.
-    The async generator runs indefinitely until the client disconnects.
+    Authentication via ?admin_key= query parameter.
+    EventSource (browser) cannot send X-Admin-Key header — this is a browser
+    spec limitation, not a bug. Query param is the standard workaround.
     """
-    logger.info("GET /admin/events — SSE connection opened")
 
+    # ── Manual admin key validation ──────────────────────────────────────────
+    # We replicate verify_admin() logic here because we cannot use
+    # Depends(verify_admin) — FastAPI would try to read the Header,
+    # which EventSource never sends.
+
+    if admin_key is None:
+        logger.warning("SSE connection attempted without admin_key query param")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="admin_key query parameter is required. "
+                   "Usage: GET /api/v1/admin/events?admin_key=YOUR_KEY",
+        )
+
+    # Constant-time comparison — prevents timing attacks
+    if not secrets.compare_digest(admin_key, settings.admin_api_key):
+        logger.warning(
+            f"SSE connection attempted with invalid admin_key: "
+            f"{admin_key[:4]}****"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid admin_key.",
+        )
+
+    logger.info("GET /admin/events — SSE connection authenticated and opened")
+
+    # ── Event generator ───────────────────────────────────────────────────────
     async def event_generator():
         """
-        Async generator that formats events as SSE-spec text chunks.
-
-        SSE format (per spec):
-          data: <JSON string>\n\n
-
-        The double newline (\n\n) is the event terminator.
-        The browser's EventSource fires onmessage when it receives \n\n.
-
-        Each event is a JSON-serialised dict with keys:
-          id, event_type, payload, created_at
+        Yields SSE-formatted text chunks.
+        SSE wire format: "data: <JSON>\n\n"
+        Double newline is the event terminator that triggers onmessage in browser.
         """
-        # Count events for this connection (for logging)
         event_count = 0
-
         try:
-            # Listen to the SSEService queue — yields events as they arrive
-            # The queue blocks (without CPU) when empty, yields pings every 25s
             async for event in sse_service.listen():
-
                 event_count += 1
                 event_type = event.get("event_type", "unknown")
 
-                # Format as SSE text:
-                #   data: {"event_type": "new_customer", ...}
-                #   (blank line)
+                # Format as SSE text — the browser EventSource reads this
                 sse_text = f"data: {json.dumps(event)}\n\n"
 
                 if event_type != "ping":
-                    # Log real events (not pings — too noisy)
                     logger.info(
                         f"  SSE → client: type='{event_type}' "
-                        f"(event #{event_count} on this connection)"
+                        f"(#{event_count} on this connection)"
                     )
-                else:
-                    logger.debug(f"  SSE → ping (event #{event_count})")
 
-                # Yield the formatted text chunk to the StreamingResponse
                 yield sse_text
 
         except Exception as e:
-            # If the generator throws (e.g. client disconnects abruptly),
-            # log the disconnection reason and stop cleanly
             logger.info(
-                f"  SSE connection closed: {type(e).__name__}: {e} "
+                f"  SSE connection closed: {type(e).__name__} "
                 f"(streamed {event_count} events)"
             )
-
         finally:
-            logger.info(
-                f"  SSE connection closed. Total events streamed: {event_count}"
-            )
+            logger.info(f"  SSE connection ended. Events streamed: {event_count}")
 
-    # Return a StreamingResponse with the correct Content-Type.
-    # Content-Type: text/event-stream is required for the browser's
-    # EventSource to recognise this as an SSE stream.
     return StreamingResponse(
         content=event_generator(),
         media_type="text/event-stream",
         headers={
-            # Disable caching — SSE must always be live
-            "Cache-Control": "no-cache",
-            # Keep the connection open — do not close after response
-            "Connection": "keep-alive",
-            # Required for some proxy configurations (Render, nginx)
-            # to pass through streaming data without buffering
-            "X-Accel-Buffering": "no",
+            "Cache-Control":     "no-cache",       # never cache SSE responses
+            "Connection":        "keep-alive",     # keep HTTP connection open
+            "X-Accel-Buffering": "no",             # disable Render/nginx buffering
         },
     )
