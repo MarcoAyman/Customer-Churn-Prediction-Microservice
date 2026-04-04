@@ -3,42 +3,41 @@
   ─────────────────────────────────────────────────────────────────────────────
   CUSTOM HOOK: useCustomerForm
 
-  Manages all form state and submission logic.
-  The CustomerEntryForm component calls this hook and receives back
-  everything it needs — no form logic lives in the component itself.
+  FIX APPLIED — Response unwrapping:
+    The FastAPI backend wraps every response in:
+      { "success": true, "data": {...}, "message": "..." }
 
-  WHY A CUSTOM HOOK?
-    The form has: field state, validation state, submit status, success data,
-    error state, and a reset function. That is six pieces of state.
-    If all of this lived inside CustomerEntryForm.jsx, the component would
-    be 200+ lines of mixed logic and JSX.
-    The hook handles all logic. The component handles only rendering.
+    BEFORE (broken):
+      responseData = await response.json()
+      // responseData = { success, data, message }
+      // SuccessCard tried: responseData.customer_id → undefined
 
-  RETURNS:
-    formData       — current value of every field
-    errors         — validation error messages per field
-    submitStatus   — 'idle' | 'loading' | 'success' | 'error'
-    successData    — { customerId, registeredAt } shown in SuccessCard
-    errorMessage   — server-level error string (shown below submit button)
-    handleChange   — function(fieldId, value) called by inputs on change
-    handleSubmit   — function() called when the submit button is clicked
-    resetForm      — function() resets everything back to initial state
+    AFTER (fixed):
+      const body = await response.json()
+      responseData = body.data   // unwrap the envelope
+      // SuccessCard now gets: { customer_id, registered_at, ... }
+
+  TIMING CONSTANTS (visible to the caller):
+    MOCK_DELAY_MS = 900ms   — simulated network delay in mock mode
+    Auto-reset after 5000ms — form clears 5s after successful registration
   ─────────────────────────────────────────────────────────────────────────────
 */
 
 import { useState, useCallback } from 'react'
 import { FORM_FIELDS, INITIAL_FORM_STATE } from '../data/formConfig'
 
-/* ── MOCK MODE ───────────────────────────────────────────────────────────── */
-/* Set to false when FastAPI is running and /api/v1/customers/register exists */
+// ── CONFIGURATION ─────────────────────────────────────────────────────────────
+
+// Set to false: always use real FastAPI
 const MOCK_MODE = false
 
-/* Simulated network delay in mock mode — makes loading state visible */
+// Simulated network delay in mock mode — makes loading spinner visible
 const MOCK_DELAY_MS = 900
 
-/* ── UUID GENERATOR (mock only) ──────────────────────────────────────────── */
-/* In real mode, PostgreSQL generates the UUID and the API returns it.
-   In mock mode, we generate a UUID in JavaScript to simulate the response. */
+// How long the SuccessCard stays visible before the form auto-resets (ms)
+const SUCCESS_AUTO_RESET_MS = 5000
+
+// ── UUID GENERATOR (mock only) ─────────────────────────────────────────────────
 function generateMockUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0
@@ -47,86 +46,53 @@ function generateMockUUID() {
   })
 }
 
-
-/* ── VALIDATION ──────────────────────────────────────────────────────────── */
-/*
-  Validates the form data against the FORM_FIELDS schema.
-  Returns a dict of { fieldId: errorMessage } for every failing field.
-  Returns an empty object if all required fields are filled.
-*/
+// ── FORM VALIDATION ────────────────────────────────────────────────────────────
 function validateForm(formData) {
   const errors = {}
-
   FORM_FIELDS.forEach((field) => {
-    /* Skip validation for optional fields */
     if (!field.required) return
-
-    /* A required field is invalid if its value is empty or whitespace-only */
     if (!formData[field.id] || formData[field.id].trim() === '') {
       errors[field.id] = `${field.label} is required`
     }
   })
-
   return errors
 }
 
-
-/* ── MAIN HOOK ───────────────────────────────────────────────────────────── */
-
+// ── MAIN HOOK ──────────────────────────────────────────────────────────────────
 export function useCustomerForm() {
-
-  /* Current value of every form field — initialised from config */
-  const [formData, setFormData] = useState(INITIAL_FORM_STATE)
-
-  /* Validation errors per field — empty means no errors */
-  const [errors, setErrors] = useState({})
-
-  /* Submit lifecycle:
-       'idle'    — form not yet submitted
-       'loading' — request in flight
-       'success' — customer created, SuccessCard visible
-       'error'   — server or validation error */
+  const [formData,     setFormData]     = useState(INITIAL_FORM_STATE)
+  const [errors,       setErrors]       = useState({})
   const [submitStatus, setSubmitStatus] = useState('idle')
+  // 'idle' | 'loading' | 'success' | 'error'
 
-  /* Data returned by the API after successful registration.
-     Shown in SuccessCard: UUID, timestamp */
-  const [successData, setSuccessData] = useState(null)
+  const [successData,   setSuccessData]   = useState(null)
+  // Populated from body.data after successful registration:
+  // { customer_id, registered_at, days_until_scoreable, status, initial_features }
 
-  /* Server-level error message — shown below the submit button */
   const [errorMessage, setErrorMessage] = useState('')
 
-
-  /* ── handleChange ──────────────────────────────────────────────────────── */
-  /* Called by GlassInput and GlassSelect whenever a field value changes.
-     Also clears the error for that field so the red border disappears
-     as soon as the user starts correcting their input. */
+  // ── handleChange ─────────────────────────────────────────────────────────────
   const handleChange = useCallback((fieldId, value) => {
     setFormData(prev => ({ ...prev, [fieldId]: value }))
-
-    /* Clear the error for this field as user types/selects */
+    // Clear this field's error as user corrects it
     setErrors(prev => {
-      if (!prev[fieldId]) return prev  /* nothing to clear */
+      if (!prev[fieldId]) return prev
       const next = { ...prev }
       delete next[fieldId]
       return next
     })
   }, [])
 
-
-  /* ── handleSubmit ──────────────────────────────────────────────────────── */
-  /* Called when the submit button is clicked.
-     Validates → submits → handles success/error. */
+  // ── handleSubmit ──────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
 
-    /* Step 1: Validate all required fields */
+    // Step 1: Client-side validation
     const validationErrors = validateForm(formData)
     if (Object.keys(validationErrors).length > 0) {
-      /* Set all errors at once so the user sees everything that is wrong */
       setErrors(validationErrors)
-      return  /* stop here — do not submit with invalid data */
+      return
     }
 
-    /* Step 2: Clear any previous errors and start loading */
     setErrors({})
     setErrorMessage('')
     setSubmitStatus('loading')
@@ -135,30 +101,26 @@ export function useCustomerForm() {
       let responseData
 
       if (MOCK_MODE) {
-        /* ── MOCK SUBMISSION ─────────────────────────────────────────────── */
-        /* Simulate the network delay so the loading spinner is visible */
+        // ── MOCK path ────────────────────────────────────────────────────────
         await new Promise(resolve => setTimeout(resolve, MOCK_DELAY_MS))
-
-        /* Simulate the JSON response that FastAPI would return:
-             customer_id     — UUID generated by PostgreSQL
-             registered_at   — server timestamp at moment of INSERT
-             days_until_scoreable — how long until the scoring gate opens */
         responseData = {
           customer_id:          generateMockUUID(),
           registered_at:        new Date().toISOString(),
           days_until_scoreable: 30,
           status:               'created',
+          initial_features:     {},
         }
 
       } else {
-        /* ── REAL API SUBMISSION ─────────────────────────────────────────── */
-        /* Convert city_tier from string ('1','2','3') to integer (1,2,3)
-           because the DB schema stores it as SMALLINT, not VARCHAR */
+        // ── REAL API path ─────────────────────────────────────────────────────
+        const BASE_URL = import.meta.env.VITE_API_URL || ''
+
+        // city_tier is stored as SMALLINT in the DB — convert string → int
         const payload = {
           ...formData,
           city_tier: formData.city_tier ? parseInt(formData.city_tier, 10) : null,
         }
-        const BASE_URL = import.meta.env.VITE_API_URL || ''
+
         const response = await fetch(`${BASE_URL}/api/v1/customers/register`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -166,38 +128,42 @@ export function useCustomerForm() {
         })
 
         if (!response.ok) {
-          /* Parse the FastAPI error response body for a helpful message */
+          // FastAPI returns { detail: "..." } for error responses
           const errorBody = await response.json().catch(() => ({}))
           throw new Error(
-            errorBody.detail ?? `Server error ${response.status}`
+            errorBody.detail ??
+            errorBody.message ??
+            `Registration failed (HTTP ${response.status})`
           )
         }
 
-        responseData = await response.json()
+        // ── FIX: unwrap the APIResponse envelope ─────────────────────────────
+        // FastAPI returns: { "success": true, "data": { ... }, "message": "..." }
+        // We need body.data, NOT the wrapper itself.
+        // Before this fix, SuccessCard received the wrapper and
+        // data.customer_id was undefined.
+        const body = await response.json()
+        responseData = body.data ?? body
+        // body.data ?? body: if body.data exists (normal case), use it.
+        // If somehow the endpoint returns data directly (defensive fallback), use body.
       }
 
-      /* Step 3: Registration succeeded — store result and show SuccessCard */
+      // Step 3: Success — store data and show SuccessCard
       setSuccessData(responseData)
       setSubmitStatus('success')
 
-      /* Step 4: Auto-reset the form after 5 seconds so the operator
-         can immediately enter the next customer */
+      // Auto-reset after SUCCESS_AUTO_RESET_MS so operator can enter next customer
       setTimeout(() => {
         resetForm()
-      }, 5000)
+      }, SUCCESS_AUTO_RESET_MS)
 
     } catch (err) {
-      /* Any network error or server error lands here */
       setErrorMessage(err.message ?? 'Registration failed. Please try again.')
       setSubmitStatus('error')
     }
   }, [formData])
 
-
-  /* ── resetForm ─────────────────────────────────────────────────────────── */
-  /* Resets every piece of state back to its initial value.
-     Called automatically after 5 seconds on success,
-     and available to the component for manual reset. */
+  // ── resetForm ─────────────────────────────────────────────────────────────────
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE)
     setErrors({})
@@ -205,7 +171,6 @@ export function useCustomerForm() {
     setSuccessData(null)
     setErrorMessage('')
   }, [])
-
 
   return {
     formData,

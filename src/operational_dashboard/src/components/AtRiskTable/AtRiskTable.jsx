@@ -3,18 +3,27 @@
   ─────────────────────────────────────────────────────────────────────────────
   ZONE 3 — TOP AT-RISK CUSTOMER TABLE
 
-  Shows the top 20 customers by churn probability.
-  Columns: Risk badge, Score bar, Customer ID, Tenure, Last Order,
-           Satisfaction stars, Complaint flag, Top SHAP reason.
+  FIXES APPLIED:
+    1. React.Fragment key fix:
+       BEFORE: <> inside .map() with key on child <tr> — React reconciliation
+               could fail to track rows correctly on data updates.
+       AFTER:  <React.Fragment key={customer.customer_id}> on the Fragment itself.
 
-  DATA SOURCE: useTopAtRisk() → v_top_at_risk view
+    2. Null safety on all fields:
+       Real API data can have null values where mock data had numbers.
+       E.g. day_since_last_order=null for new customers, satisfaction_score=null.
+       Added '?? 0' / '?? —' guards everywhere a value is used in arithmetic
+       or method calls.
+
+    3. churn_probability guard:
+       Real API returns Decimal converted to float. Guard against NaN/null.
   ─────────────────────────────────────────────────────────────────────────────
 */
 
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import './AtRiskTable.css'
 
-/* ── RISK BADGE ──────────────────────────────────────────────────────────── */
+// ── RISK BADGE ─────────────────────────────────────────────────────────────────
 function RiskBadge({ tier }) {
   const classMap = {
     HIGH:       'badge--high',
@@ -24,15 +33,19 @@ function RiskBadge({ tier }) {
   }
   return (
     <span className={`risk-badge ${classMap[tier] ?? 'badge--low'}`}>
-      {tier}
+      {tier ?? '—'}
     </span>
   )
 }
 
-/* ── SCORE BAR — visual representation of churn probability ─────────────── */
+// ── SCORE BAR ──────────────────────────────────────────────────────────────────
 function ScoreBar({ probability }) {
-  const pct = Math.round(probability * 100)
-  /* Colour the fill based on the score value */
+  // Guard: probability may be null (new customers) or NaN
+  const safeProb = typeof probability === 'number' && !isNaN(probability)
+    ? probability
+    : 0
+
+  const pct = Math.round(safeProb * 100)
   const colour =
     pct >= 70 ? 'var(--color-high)'   :
     pct >= 45 ? 'var(--color-medium)' :
@@ -40,24 +53,27 @@ function ScoreBar({ probability }) {
 
   return (
     <div className="score-bar">
-      <div
-        className="score-bar__fill"
-        style={{ width: `${pct}%`, background: colour }}
-      />
-      <span className="score-bar__label">{probability.toFixed(2)}</span>
+      <div>
+        <div
+          className="score-bar__fill"
+          style={{ width: `${pct}%`, background: colour }}
+        />
+      </div>
+      <span className="score-bar__label">{safeProb.toFixed(2)}</span>
     </div>
   )
 }
 
-/* ── SATISFACTION STARS ──────────────────────────────────────────────────── */
-/* Shows 1–5 stars filled/empty based on satisfaction_score */
+// ── SATISFACTION STARS ─────────────────────────────────────────────────────────
 function SatisfactionStars({ score }) {
+  // Guard: score may be null — show no filled stars
+  const safeScore = typeof score === 'number' ? score : 0
   return (
     <span className="sat-stars">
       {[1, 2, 3, 4, 5].map(i => (
         <span
           key={i}
-          className={`sat-stars__star ${i <= score ? 'sat-stars__star--filled' : ''}`}
+          className={`sat-stars__star ${i <= safeScore ? 'sat-stars__star--filled' : ''}`}
         >
           ★
         </span>
@@ -66,27 +82,21 @@ function SatisfactionStars({ score }) {
   )
 }
 
-
-/* ── MAIN EXPORT ─────────────────────────────────────────────────────────── */
+// ── MAIN COMPONENT ─────────────────────────────────────────────────────────────
 export default function AtRiskTable({ data, isLoading }) {
-  /* Track which row is expanded (click to see more detail) */
   const [expandedId, setExpandedId] = useState(null)
 
-  /* Toggle row expansion */
   const toggleExpand = (id) => {
     setExpandedId(prev => prev === id ? null : id)
   }
 
   return (
     <div className="at-risk__panel">
-
-      {/* Panel header */}
       <div className="at-risk__header">
         <h3 className="at-risk__title">Top At-Risk Customers</h3>
         <span className="at-risk__badge">v_top_at_risk · top 20</span>
       </div>
 
-      {/* Table */}
       <div className="at-risk__scroll">
         <table className="at-risk__table">
           <thead>
@@ -104,7 +114,7 @@ export default function AtRiskTable({ data, isLoading }) {
 
           <tbody>
             {isLoading ? (
-              /* Skeleton rows while data loads */
+              // Skeleton rows while data is loading
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} className="at-risk__skeleton-row">
                   {Array.from({ length: 8 }).map((_, j) => (
@@ -112,12 +122,27 @@ export default function AtRiskTable({ data, isLoading }) {
                   ))}
                 </tr>
               ))
+            ) : !data || data.length === 0 ? (
+              // Empty state — no at-risk customers
+              <tr>
+                <td colSpan={8} style={{
+                  textAlign: 'center',
+                  padding: '24px',
+                  color: 'var(--text-tertiary)',
+                  fontSize: '12px',
+                }}>
+                  No HIGH or MEDIUM risk customers found
+                </td>
+              </tr>
             ) : (
+              // ── FIX: use React.Fragment with key on the Fragment, not on child tr ──
+              // Before: <> ... <tr key={...}> — key on inner element, not outer Fragment
+              // After:  <Fragment key={...}> ... <tr> — correct React reconciliation
               (data ?? []).map((customer) => (
-                <>
-                  {/* Main row */}
+                <Fragment key={customer.customer_id}>
+
+                  {/* Main data row — click to expand detail */}
                   <tr
-                    key={customer.customer_id}
                     className={`at-risk__row ${expandedId === customer.customer_id ? 'at-risk__row--expanded' : ''}`}
                     onClick={() => toggleExpand(customer.customer_id)}
                   >
@@ -128,60 +153,74 @@ export default function AtRiskTable({ data, isLoading }) {
                       <ScoreBar probability={customer.churn_probability} />
                     </td>
                     <td className="at-risk__id">
-                      {customer.display_id}
+                      {/* display_id is "#e5fdab1d" (first 8 chars of UUID) */}
+                      {customer.display_id ?? `#${String(customer.customer_id ?? '').slice(0, 8)}`}
                     </td>
                     <td className="at-risk__mono">
-                      {customer.tenure_months}mo
+                      {/* tenure_months may be 0.0 for new customers */}
+                      {customer.tenure_months != null ? `${customer.tenure_months}mo` : '—'}
                     </td>
                     <td className="at-risk__mono">
-                      {customer.day_since_last_order}d ago
+                      {/* day_since_last_order is null for customers with no orders */}
+                      {customer.day_since_last_order != null
+                        ? `${customer.day_since_last_order}d ago`
+                        : '—'
+                      }
                     </td>
                     <td>
+                      {/* satisfaction_score is null until customer rates the service */}
                       <SatisfactionStars score={customer.satisfaction_score} />
                     </td>
                     <td>
-                      {/* Complaint flag — red dot if complaint raised */}
                       <span className={`complaint-flag ${customer.complain ? 'complaint-flag--yes' : 'complaint-flag--no'}`}>
                         {customer.complain ? '● yes' : '○ no'}
                       </span>
                     </td>
                     <td className="at-risk__reason">
-                      {customer.top_reason}
+                      {/* top_reason: "—" for kaggle seed (no SHAP), feature name for live model */}
+                      {customer.top_reason ?? '—'}
                     </td>
                   </tr>
 
-                  {/* Expanded detail row — shown on click */}
+                  {/* Expanded detail row — shown when this row is clicked */}
                   {expandedId === customer.customer_id && (
-                    <tr key={`${customer.customer_id}-detail`} className="at-risk__detail-row">
+                    <tr className="at-risk__detail-row">
                       <td colSpan={8}>
                         <div className="at-risk__detail">
                           <span className="at-risk__detail-item">
                             <span className="at-risk__detail-label">Gender</span>
-                            <span>{customer.gender}</span>
+                            <span>{customer.gender ?? '—'}</span>
                           </span>
                           <span className="at-risk__detail-item">
                             <span className="at-risk__detail-label">City Tier</span>
-                            <span>{customer.city_tier}</span>
+                            <span>{customer.city_tier ?? '—'}</span>
+                          </span>
+                          <span className="at-risk__detail-item">
+                            <span className="at-risk__detail-label">Order Count</span>
+                            <span className="at-risk__mono">
+                              {customer.order_count ?? 0}
+                            </span>
                           </span>
                           <span className="at-risk__detail-item">
                             <span className="at-risk__detail-label">Churn Prob.</span>
-                            <span className="at-risk__mono">{customer.churn_probability.toFixed(4)}</span>
-                          </span>
-                          <span className="at-risk__detail-item">
-                            <span className="at-risk__detail-label">SHAP Reason</span>
-                            <span>{customer.top_reason}</span>
+                            <span className="at-risk__mono">
+                              {typeof customer.churn_probability === 'number'
+                                ? customer.churn_probability.toFixed(4)
+                                : '—'
+                              }
+                            </span>
                           </span>
                         </div>
                       </td>
                     </tr>
                   )}
-                </>
+
+                </Fragment>
               ))
             )}
           </tbody>
         </table>
       </div>
-
     </div>
   )
 }

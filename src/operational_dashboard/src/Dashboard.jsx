@@ -3,46 +3,37 @@
   ─────────────────────────────────────────────────────────────────────────────
   DASHBOARD ORCHESTRATOR
 
-  This is the root component that:
-    1. Calls all data hooks (React Query + SSE)
-    2. Assembles all six zone components in the correct layout
-    3. Passes data down as props — no component fetches its own data
+  FIX APPLIED — ErrorBoundary:
+    The main content is now wrapped in <ErrorBoundary>.
+    If any child component crashes (TypeError, null dereference, etc.),
+    the ErrorBoundary catches it and renders an error message instead of
+    unmounting the entire tree → black screen.
 
-  WHY ALL HOOKS AT THE TOP LEVEL?
-    Centralising data fetching here means:
-    - Each query runs once, not per-component
-    - When a 'batch_completed' SSE event arrives, we call
-      queryClient.invalidateQueries() once here and ALL charts refresh
-    - Components are pure presentational — they receive data as props
-
-  LAYOUT:
-    ┌──────────────────────────────────────────────────────────┐
-    │  HealthBar (sticky, full width)                          │
-    ├──────────────────────────────────────────────────────────┤
-    │  KPICards (4 cards, full width)                          │
-    ├─────────────────────────────────┬────────────────────────┤
-    │  RiskDistributionChart          │  EventFeed (SSE)       │
-    │  ChurnTrendChart                │  (right col, 2 rows    │
-    │  AtRiskTable                    │   spanning)            │
-    │  DriftMonitor                   │                        │
-    └─────────────────────────────────┴────────────────────────┘
+  TIMING CONSTANTS:
+    React Query polling:
+      KPI / at-risk / last-batch:    60 seconds (in useDashboardData.js)
+      churn-trend / drift:           120 seconds (in useDashboardData.js)
+    SSE keepalive ping:              25 seconds (in sse_service.py)
+    SSE reconnect delay on error:    3 seconds  (in useSSE.js)
   ─────────────────────────────────────────────────────────────────────────────
 */
 
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-/* ── Zone components ─────────────────────────────────────────────────────── */
-import HealthBar              from './components/HealthBar/HealthBar'
-import KPICards               from './components/KPICards/KPICards'
-import RiskDistributionChart  from './components/RiskDistributionChart/RiskDistributionChart'
-import ChurnTrendChart        from './components/ChurnTrendChart/ChurnTrendChart'
-import AtRiskTable            from './components/AtRiskTable/AtRiskTable'
-import DriftMonitor           from './components/DriftMonitor/DriftMonitor'
-import EventFeed              from './components/EventFeed/EventFeed'
+import ErrorBoundary from './ErrorBoundary'
 
-/* ── Data hooks ──────────────────────────────────────────────────────────── */
-import { useSSE }            from './hooks/useSSE'
+// Zone components
+import HealthBar             from './components/HealthBar/HealthBar'
+import KPICards              from './components/KPICards/KPICards'
+import RiskDistributionChart from './components/RiskDistributionChart/RiskDistributionChart'
+import ChurnTrendChart       from './components/ChurnTrendChart/ChurnTrendChart'
+import AtRiskTable           from './components/AtRiskTable/AtRiskTable'
+import DriftMonitor          from './components/DriftMonitor/DriftMonitor'
+import EventFeed             from './components/EventFeed/EventFeed'
+
+// Data hooks
+import { useSSE } from './hooks/useSSE'
 import {
   useKPISummary,
   useRiskDistribution,
@@ -50,41 +41,33 @@ import {
   useTopAtRisk,
   useDriftMonitor,
   useLastBatch,
-}                            from './hooks/useDashboardData'
+} from './hooks/useDashboardData'
 
-/* ── Dashboard CSS ───────────────────────────────────────────────────────── */
 import './Dashboard.css'
 
 
 export default function Dashboard() {
-
-  /* ── React Query client — used to invalidate queries on SSE events ─────── */
   const queryClient = useQueryClient()
 
-  /* ── SSE hook — provides live events and connection status ─────────────── */
+  // SSE — live event stream (always open)
   const { events, status: sseStatus, clearEvents } = useSSE()
 
-  /* ── REST data hooks — each polls on its own interval ───────────────────── */
-  const { data: kpiData,          isLoading: kpiLoading }    = useKPISummary()
-  const { data: riskDistData,     isLoading: riskLoading }   = useRiskDistribution()
-  const { data: trendData,        isLoading: trendLoading }  = useChurnTrend()
-  const { data: atRiskData,       isLoading: atRiskLoading } = useTopAtRisk()
-  const { data: driftData,        isLoading: driftLoading }  = useDriftMonitor()
-  const { data: lastBatchData }                               = useLastBatch()
+  // REST — polled data (React Query)
+  const { data: kpiData,      isLoading: kpiLoading }    = useKPISummary()
+  const { data: riskDistData, isLoading: riskLoading }   = useRiskDistribution()
+  const { data: trendData,    isLoading: trendLoading }  = useChurnTrend()
+  const { data: atRiskData,   isLoading: atRiskLoading } = useTopAtRisk()
+  const { data: driftData,    isLoading: driftLoading }  = useDriftMonitor()
+  const { data: lastBatchData }                           = useLastBatch()
 
-  /* ── SSE event handler — refresh queries when key events arrive ──────────
-     When a 'batch_completed' event arrives, we know the database has fresh
-     prediction and batch data. We invalidate all queries so they refetch
-     immediately instead of waiting for their next polling interval.
-     This is the "reactive" part of the dashboard — SSE triggers REST refresh. */
+  // When SSE delivers a batch_completed event, immediately invalidate all
+  // React Query caches so charts refresh without waiting for the next poll.
   useEffect(() => {
-    if (events.length === 0) return
-
-    /* Look at the most recent event */
+    if (!events.length) return
     const latest = events[0]
 
     if (latest.event_type === 'batch_completed') {
-      /* Batch run finished — refresh every data source */
+      // Batch finished — all data is stale, refetch everything now
       queryClient.invalidateQueries({ queryKey: ['kpi-summary'] })
       queryClient.invalidateQueries({ queryKey: ['risk-distribution'] })
       queryClient.invalidateQueries({ queryKey: ['churn-trend'] })
@@ -94,79 +77,75 @@ export default function Dashboard() {
     }
 
     if (latest.event_type === 'drift_alert') {
-      /* Drift alert — refresh drift and batch data specifically */
       queryClient.invalidateQueries({ queryKey: ['drift-monitor'] })
       queryClient.invalidateQueries({ queryKey: ['last-batch'] })
     }
 
     if (latest.event_type === 'model_promoted') {
-      /* Model changed — refresh everything */
-      queryClient.invalidateQueries()
+      queryClient.invalidateQueries()  // everything changed
     }
-
-  /* We only want this to re-run when events[0] changes (a new event arrived).
-     Depending on events.length would cause unnecessary re-runs. */
   }, [events[0]?.id, queryClient])
 
 
   return (
     <div className="dashboard">
 
-      {/* ── ZONE 1: System Health Bar ─────────────────────────────────────── */}
+      {/* Zone 1: Health Bar — outside ErrorBoundary so it stays visible even on crash */}
       <HealthBar
         lastBatch={lastBatchData}
         kpiSummary={kpiData}
         sseStatus={sseStatus}
       />
 
-      {/* ── ZONE 2: KPI Cards ─────────────────────────────────────────────── */}
-      <KPICards
-        data={kpiData}
-        isLoading={kpiLoading}
-      />
+      {/* ErrorBoundary wraps all main content.
+          Any crash in Zones 2–3 shows the error message instead of black screen. */}
+      <ErrorBoundary>
 
-      {/* ── ZONE 3: Main Content + SSE Feed ───────────────────────────────── */}
-      <div className="dashboard__main">
+        {/* Zone 2: KPI Cards */}
+        <KPICards
+          data={kpiData}
+          isLoading={kpiLoading}
+        />
 
-        {/* LEFT COLUMN — charts, tables */}
-        <div className="dashboard__left">
+        {/* Zone 3: Main Content + SSE Feed */}
+        <div className="dashboard__main">
 
-          {/* Chart row — Risk Distribution + Churn Trend side by side */}
-          <div className="dashboard__chart-row">
-            <RiskDistributionChart
-              data={riskDistData}
-              isLoading={riskLoading}
+          {/* Left column — charts and tables */}
+          <div className="dashboard__left">
+            <div className="dashboard__chart-row">
+              <RiskDistributionChart
+                data={riskDistData}
+                isLoading={riskLoading}
+              />
+              <ChurnTrendChart
+                data={trendData}
+                isLoading={trendLoading}
+              />
+            </div>
+
+            <AtRiskTable
+              data={atRiskData}
+              isLoading={atRiskLoading}
             />
-            <ChurnTrendChart
-              data={trendData}
-              isLoading={trendLoading}
+
+            <DriftMonitor
+              data={driftData}
+              isLoading={driftLoading}
             />
           </div>
 
-          {/* At-Risk Customer Table */}
-          <AtRiskTable
-            data={atRiskData}
-            isLoading={atRiskLoading}
-          />
-
-          {/* Feature Drift Monitor */}
-          <DriftMonitor
-            data={driftData}
-            isLoading={driftLoading}
-          />
+          {/* Right column — live SSE event feed */}
+          <div className="dashboard__right">
+            <EventFeed
+              events={events}
+              sseStatus={sseStatus}
+              onClear={clearEvents}
+            />
+          </div>
 
         </div>
 
-        {/* RIGHT COLUMN — Live SSE Event Feed */}
-        <div className="dashboard__right">
-          <EventFeed
-            events={events}
-            sseStatus={sseStatus}
-            onClear={clearEvents}
-          />
-        </div>
-
-      </div>
+      </ErrorBoundary>
 
     </div>
   )
