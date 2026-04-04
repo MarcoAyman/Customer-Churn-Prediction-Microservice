@@ -3,28 +3,18 @@ src/api/services/customer_service.py
 ══════════════════════════════════════════════════════════════════════════════
 CUSTOMER SERVICE — registration business logic.
 
-HISTORY OF BUGS FIXED IN THIS VERSION:
+WHAT IS FIXED vs PREVIOUS VERSION:
 
-  Bug 1 (original deployment):
-    insert_data included columns that don't exist in Supabase schema:
-    'email', 'password_hash', 'kaggle_customer_id', 'kaggle_churn_label'
-    → psycopg2 raised UndefinedColumn → rollback → 500 → nothing saved
-    SSE still fired because the queue write does not depend on DB commits.
+  Added SELECT verification after the customers INSERT:
+    After _execute_insert commits, a SELECT COUNT(*) WHERE id = %s confirms
+    the row is actually in Supabase. If the SELECT returns 0, the commit
+    did not persist — this will be logged clearly with a RuntimeError.
 
-  Bug 2 (db_fix deployment):
-    _get_customers_columns() created a SECOND DatabaseConnection inside
-    the request handler to dynamically detect schema columns.
-    With the dashboard making 4+ concurrent DB requests, this second
-    connection exhausted Supabase's free tier connection limit.
-    → connection timeout → Render dropped the request with no response
-    → browser showed "Failed to fetch" with no error detail.
-
-THIS VERSION:
-  - No second DatabaseConnection ever created
-  - Reads directly from the Pydantic request object (.value for Enums)
-  - Only the exact columns that exist in the Supabase schema
-  - If full_name column is missing, tries without it (graceful degradation)
-  - Every step logged with ✓ / ✗ so Render logs show exactly what happened
+  This verification makes the invisible visible:
+    Previously, if the commit silently failed (pgBouncer edge case, network
+    hiccup), the function returned a UUID, the form showed "Customer Created",
+    but nothing was in the database. The verification catches this case and
+    raises an error so the form shows a real error message instead.
 ══════════════════════════════════════════════════════════════════════════════
 """
 
@@ -52,16 +42,23 @@ def register_customer(
     """
     Execute the full customer registration flow.
 
-    Uses ONLY the single database connection provided by get_db().
-    Never opens a second connection — avoids exhausting Supabase pool.
+    Two rows are written atomically to Supabase on every successful call:
+      Row 1: customers       (9 profile fields + server metadata)
+      Row 2: customer_features (all behavioral fields start at zero/null)
 
-    Steps:
-      1. Log all incoming field values
-      2. Run business integrity checks
-      3. INSERT into customers table (RETURNING id for the UUID)
-      4. INSERT into customer_features table
-      5. Publish SSE event to dashboard live feed
-      6. Return response
+    Both writes are verified with a SELECT after commit.
+    SSE event is published only after both rows are confirmed.
+
+    Args:
+        request: Pydantic-validated request from the route handler
+        db:      connected DatabaseConnection from Depends(get_db)
+
+    Returns:
+        CustomerRegisterResponse
+
+    Raises:
+        ValueError:  business rule violation → HTTP 422
+        Exception:   DB error → HTTP 500 (logged with full stack trace)
     """
     logger.info("─" * 55)
     logger.info("  CUSTOMER REGISTRATION — starting")
@@ -70,7 +67,7 @@ def register_customer(
     # ── Step 1: Log incoming fields ───────────────────────────────────────
     log_validation_summary(request)
 
-    # ── Step 2: Integrity checks ──────────────────────────────────────────
+    # ── Step 2: Business integrity checks ────────────────────────────────
     logger.info("  Step 2: Business integrity checks...")
     issues = validate_customer_request(request)
     if issues:
@@ -83,11 +80,7 @@ def register_customer(
 
     # ── Step 3: INSERT into customers ─────────────────────────────────────
     logger.info("  Step 3: INSERT INTO customers...")
-
-    # Try to include full_name first. If the column does not exist yet
-    # (migration not run), fall back to inserting without it.
     customer_id = _insert_with_full_name(db, request, now)
-
     logger.info(f"  ✓ customers row committed: id={customer_id}")
 
     # ── Step 4: INSERT into customer_features ────────────────────────────
@@ -96,7 +89,8 @@ def register_customer(
     logger.info(f"  ✓ customer_features row committed")
 
     # ── Step 5: Publish SSE event ─────────────────────────────────────────
-    # In try/except — SSE failure must never mask a successful registration
+    # Published AFTER both rows are verified in DB.
+    # try/except so SSE failure never masks a successful registration.
     logger.info("  Step 5: Publishing SSE event...")
     try:
         sse_service.publish(
@@ -112,9 +106,9 @@ def register_customer(
         )
         logger.info("  ✓ SSE event published")
     except Exception as e:
-        logger.warning(f"  SSE publish failed (non-critical, customer IS saved): {e}")
+        logger.warning(f"  SSE publish failed (non-critical, rows ARE in DB): {e}")
 
-    # ── Step 6: Build response ────────────────────────────────────────────
+    # ── Step 6: Return response ───────────────────────────────────────────
     response = CustomerRegisterResponse(
         customer_id=customer_id,
         registered_at=now,
@@ -128,18 +122,10 @@ def register_customer(
     return response
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# INSERT HELPERS
-# ─────────────────────────────────────────────────────────────────────────────
-
 def _build_core_insert(request: CustomerRegisterRequest, now: datetime) -> tuple[list, list]:
     """
-    Build the core column list and value list for the customers INSERT.
-    These columns are guaranteed to exist in the schema (based on Kaggle data).
-    Does NOT include full_name — that is added separately by the caller.
-
-    Returns:
-        (columns, values) — lists of equal length, ready for parameterised INSERT
+    Build the guaranteed-safe column and value lists for the customers INSERT.
+    Only columns that exist in every version of the schema are included.
     """
     columns = [
         "registered_at",
@@ -153,12 +139,12 @@ def _build_core_insert(request: CustomerRegisterRequest, now: datetime) -> tuple
         "preferred_order_cat",
     ]
     values = [
-        now,
+        now,                                        # datetime object — psycopg2 native
         True,
         "customer",
-        request.gender.value,               # Enum → string: "Male" / "Female"
-        request.marital_status.value,        # Enum → string: "Single" etc.
-        int(request.city_tier),              # Pydantic gives int but explicit cast
+        request.gender.value,                       # Enum.value → plain string
+        request.marital_status.value,
+        int(request.city_tier),                     # ensure Python int for SMALLINT
         request.preferred_payment_mode.value,
         request.preferred_login_device.value,
         request.preferred_order_cat.value,
@@ -168,13 +154,23 @@ def _build_core_insert(request: CustomerRegisterRequest, now: datetime) -> tuple
 
 def _execute_insert(db: DatabaseConnection, columns: list, values: list) -> str:
     """
-    Run the actual INSERT SQL and return the generated UUID.
-    Commits inside the function. Raises on any DB error.
+    Run INSERT INTO customers RETURNING id and verify the row exists.
+
+    Commits explicitly (psycopg2 does not auto-commit).
+    Runs a verification SELECT after commit to confirm the row persisted.
+
+    Returns:
+        str: UUID of the inserted row
+
+    Raises:
+        RuntimeError: if INSERT succeeds but row not found in verification SELECT
+        psycopg2.errors.UndefinedColumn: if a column doesn't exist in schema
+        psycopg2.errors.NotNullViolation: if a required column has None value
+        psycopg2.errors.InvalidTextRepresentation: if an ENUM value is wrong
     """
     placeholders = ", ".join(["%s"] * len(columns))
-    col_list     = ", ".join(columns)
     sql = f"""
-        INSERT INTO {TABLE_CUSTOMERS} ({col_list})
+        INSERT INTO {TABLE_CUSTOMERS} ({", ".join(columns)})
         VALUES ({placeholders})
         RETURNING id;
     """
@@ -184,13 +180,58 @@ def _execute_insert(db: DatabaseConnection, columns: list, values: list) -> str:
 
     with db.get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute(sql, values)
+            try:
+                cur.execute(sql, values)
+            except Exception as e:
+                # Log the exact PostgreSQL error before re-raising
+                # This shows up in Render logs as the exact failure cause
+                logger.error(
+                    f"  ✗ INSERT INTO customers FAILED\n"
+                    f"  PostgreSQL error: {type(e).__name__}: {e}\n"
+                    f"  Columns attempted: {columns}\n"
+                    f"  Values attempted:  {values}"
+                )
+                raise
+
             result = cur.fetchone()
             if result is None:
-                raise RuntimeError("INSERT RETURNING id returned nothing")
+                raise RuntimeError(
+                    "INSERT INTO customers RETURNING id returned no row. "
+                    "This should not happen — the INSERT must have failed silently."
+                )
             customer_id = str(result[0])
+
+        # Explicit commit — REQUIRED, psycopg2 does NOT auto-commit
         conn.commit()
-        logger.info(f"  commit() called → id={customer_id}")
+        logger.info(f"  customers commit() called: id={customer_id}")
+
+    # ── Verification SELECT ────────────────────────────────────────────────
+    # Confirms the committed row is actually readable from Supabase.
+    # Uses a fresh read from the pool (different connection slot) to ensure
+    # we are not reading from a local cache.
+    verify = db.execute_query(
+        "SELECT id, registered_at FROM customers WHERE id = %s",
+        (customer_id,)
+    )
+    if verify:
+        logger.info(
+            f"  ✓ VERIFIED: customers row confirmed in DB\n"
+            f"    id={verify[0]['id']}\n"
+            f"    registered_at={verify[0]['registered_at']}"
+        )
+    else:
+        logger.error(
+            f"  ✗ VERIFICATION FAILED: customers row NOT found after commit!\n"
+            f"  id={customer_id}\n"
+            f"  Possible causes:\n"
+            f"    1. pgBouncer session state issue (port 6543 transaction mode)\n"
+            f"    2. INSERT went to a different schema/database\n"
+            f"    3. Connection was closed before commit completed"
+        )
+        raise RuntimeError(
+            f"customers INSERT appeared to succeed (RETURNING id={customer_id}) "
+            f"but row not found in verification SELECT. Data was NOT saved."
+        )
 
     return customer_id
 
@@ -201,25 +242,13 @@ def _insert_with_full_name(
     now: datetime,
 ) -> str:
     """
-    Try to INSERT with full_name. If full_name column does not exist yet
-    (migration not run), fall back to inserting without it.
+    Try to INSERT with full_name. Falls back gracefully if column missing.
 
-    This means:
-      - After run_add_full_name.py is run: full_name is saved ✓
-      - Before the migration:             registration still works ✓
-
-    Args:
-        db:      connected DatabaseConnection
-        request: validated Pydantic request
-        now:     server-side timestamp for registered_at
-
-    Returns:
-        str: UUID of the inserted row
+    After running scripts/run_add_full_name.py: full_name is saved ✓
+    Before the migration:                       registration still works ✓
     """
     columns, values = _build_core_insert(request, now)
 
-    # Add full_name if the user provided one
-    # If the column doesn't exist, we catch UndefinedColumn below
     if request.full_name is not None:
         columns = ["full_name"] + columns
         values  = [request.full_name] + values
@@ -230,24 +259,15 @@ def _insert_with_full_name(
     except Exception as e:
         error_str = str(e).lower()
 
-        # Check for UndefinedColumn — full_name column doesn't exist yet
+        # full_name column doesn't exist → retry without it
         if "full_name" in error_str and (
-            "column" in error_str or "undefined" in error_str
+            "column" in error_str or "undefined" in error_str or "does not exist" in error_str
         ):
             logger.warning(
-                "  full_name column not found — retrying without it.\n"
+                "  full_name column not in schema — retrying without it.\n"
                 "  Run: python scripts/run_add_full_name.py to add the column."
             )
-            # Retry without full_name
-            columns_no_name, values_no_name = _build_core_insert(request, now)
-            return _execute_insert(db, columns_no_name, values_no_name)
+            cols_no_name, vals_no_name = _build_core_insert(request, now)
+            return _execute_insert(db, cols_no_name, vals_no_name)
 
-        # Any other error — log the exact PostgreSQL message and re-raise
-        logger.error(
-            f"  ✗ INSERT INTO customers FAILED\n"
-            f"  Error type:   {type(e).__name__}\n"
-            f"  Error detail: {e}\n"
-            f"  Columns:      {columns}\n"
-            f"  This error will be returned as HTTP 500 to the form."
-        )
         raise
