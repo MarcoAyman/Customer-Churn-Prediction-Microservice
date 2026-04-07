@@ -1,0 +1,86 @@
+# .github/workflows/keep_alive.yml
+#
+# SCENARIO B: Keep Render alive when NO browser has either app open.
+#
+# WHY THIS IS NEEDED:
+#   keepAlive.js runs inside the browser tab.
+#   If nobody has the dashboard or entry form open at all,
+#   there is no browser running, so keepAlive.js isn't running either.
+#   After 15 minutes with no requests, Render spins down.
+#
+#   This GitHub Actions workflow runs every 10 minutes, 24/7,
+#   regardless of whether any browser is open. It sends a GET to
+#   /api/v1/health on your Render backend — that single request is
+#   enough to reset Render's 15-minute inactivity timer.
+#
+# HOW TO SET UP (one-time):
+#   1. Go to your GitHub repo → Settings → Secrets and variables → Actions
+#   2. Click "New repository secret"
+#   3. Name:  RENDER_API_URL
+#      Value: https://your-app-name.onrender.com
+#      (your full Render URL, no trailing slash, no /api/v1/health suffix)
+#   4. Save. That's it — the workflow will start running on its next schedule.
+#
+# COST:
+#   GitHub Actions free tier gives 2,000 minutes/month on public repos,
+#   500 minutes/month on private repos.
+#   This workflow runs for ~5 seconds every 10 minutes = ~720 min/month
+#   on a private repo. Fits comfortably within the free 500-minute limit
+#   if your repo is private. If you're worried about minutes, change the
+#   cron to every 14 minutes — still prevents the 15-min sleep.
+#
+# HOW TO VERIFY IT'S WORKING:
+#   Go to your repo → Actions → "Keep Render Alive" → click any run
+#   You should see "Ping successful" with a 200 status in the logs.
+#   If you see curl errors, check that RENDER_API_URL is set correctly.
+
+name: Keep Render Alive
+
+on:
+  schedule:
+    # Runs every 10 minutes, 24 hours a day, 7 days a week.
+    # Cron syntax: minute  hour  day  month  weekday
+    # */10 = every 10 minutes
+    - cron: '*/10 * * * *'
+
+  # Allows you to trigger this manually from the GitHub Actions UI
+  # (useful for testing that the secret and URL are correct)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Render API
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send keep-alive ping to Render
+        run: |
+          echo "Pinging: ${{ secrets.RENDER_API_URL }}/api/v1/health"
+
+          # curl flags:
+          #   -f  → fail with exit code 22 on HTTP errors (4xx/5xx)
+          #         so the workflow shows as FAILED if Render is broken
+          #   -s  → silent mode (no progress bar)
+          #   -o  → write response body to /dev/null (we don't need it)
+          #   -w  → write HTTP status code to stdout so we can log it
+          #   --max-time 30 → abort if no response in 30 seconds
+          #         (Render cold starts are 20–60s, but if it's been
+          #          pinged every 10 min it should never be cold)
+
+          HTTP_STATUS=$(curl \
+            -f \
+            -s \
+            -o /dev/null \
+            -w "%{http_code}" \
+            --max-time 30 \
+            "${{ secrets.RENDER_API_URL }}/api/v1/health"
+          )
+
+          echo "HTTP Status: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✓ Ping successful — Render is alive"
+          else
+            echo "✗ Unexpected status: $HTTP_STATUS"
+            exit 1
+          fi
