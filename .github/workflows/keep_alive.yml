@@ -41,7 +41,7 @@ on:
     # Runs every 10 minutes, 24 hours a day, 7 days a week.
     # Cron syntax: minute  hour  day  month  weekday
     # */10 = every 10 minutes
-    - cron: '*/10 * * * *'
+    - cron: '*/14 * * * *'
 
   # Allows you to trigger this manually from the GitHub Actions UI
   # (useful for testing that the secret and URL are correct)
