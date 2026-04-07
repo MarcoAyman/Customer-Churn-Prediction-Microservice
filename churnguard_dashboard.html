@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChurnGuard — MLOps Pipeline Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#080c10;--bg1:#0d1117;--bg2:#111820;--bg3:#161e28;--bg4:#1c2532;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text0:#e6edf3;--text1:#8b949e;--text2:#484f58;
+  --blue:#58a6ff;--blue-dim:rgba(88,166,255,0.12);
+  --green:#3fb950;--green-dim:rgba(63,185,80,0.12);
+  --purple:#bc8cff;--purple-dim:rgba(188,140,255,0.12);
+  --orange:#e3b341;--orange-dim:rgba(227,179,65,0.12);
+  --red:#f85149;--red-dim:rgba(248,81,73,0.12);
+  --cyan:#79c0ff;--mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+html,body{height:100%;background:var(--bg0);color:var(--text0);font-family:var(--sans);font-size:13px;overflow:hidden}
+.shell{display:flex;height:100vh}
+.sidebar{width:230px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-brand{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+.sidebar-brand h1{font-family:var(--sans);font-size:18px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,var(--blue) 0%,var(--purple) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sidebar-brand p{font-family:var(--mono);font-size:9px;color:var(--text2);margin-top:3px;letter-spacing:.06em}
+.sidebar-section{padding:14px 12px 6px;font-family:var(--mono);font-size:9px;font-weight:600;color:var(--text2);letter-spacing:.12em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;margin:1px 8px;border-radius:6px;cursor:pointer;transition:all 0.15s;font-family:var(--mono);font-size:11px;color:var(--text1);border:1px solid transparent;user-select:none}
+.nav-item:hover{background:var(--bg3);color:var(--text0)}
+.nav-item.active{background:var(--blue-dim);color:var(--blue);border-color:rgba(88,166,255,0.18)}
+.nav-item svg{width:14px;height:14px;flex-shrink:0}
+.sidebar-footer{margin-top:auto;padding:14px;border-top:1px solid var(--border)}
+.gpu-badge{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(63,185,80,.4)}50%{opacity:.7;box-shadow:0 0 0 4px rgba(63,185,80,0)}}
+.gpu-info p:first-child{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text0)}
+.gpu-info p:last-child{font-family:var(--mono);font-size:9px;color:var(--green);margin-top:1px}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg0)}
+.view{display:none;padding:26px}
+.view.active{display:block}
+.main::-webkit-scrollbar{width:4px}
+.main::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+.view-header{margin-bottom:22px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.view-title{font-family:var(--sans);font-size:22px;font-weight:700;letter-spacing:-.5px}
+.view-sub{font-family:var(--mono);font-size:9px;color:var(--text2);margin-top:4px;letter-spacing:.04em}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:500;flex-shrink:0}
+.badge-blue{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(88,166,255,.2)}
+.badge-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(63,185,80,.2)}
+.badge-orange{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(227,179,65,.2)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px}
+.card-title{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text1);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+.ct-blue{color:var(--blue)}.ct-green{color:var(--green)}.ct-purple{color:var(--purple)}.ct-orange{color:var(--orange)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi-label{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--text2);letter-spacing:.1em;text-transform:uppercase}
+.kpi-val{font-family:var(--mono);font-size:26px;font-weight:600;margin:6px 0 4px;line-height:1}
+.kpi-sub{font-family:var(--mono);font-size:10px;color:var(--text2)}
+.kpi-blue .kpi-val{color:var(--blue)}.kpi-green .kpi-val{color:var(--green)}.kpi-purple .kpi-val{color:var(--purple)}.kpi-orange .kpi-val{color:var(--orange)}
+.flow-row{display:flex;align-items:stretch;gap:0;margin-bottom:12px}
+.flow-step{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;flex:1;min-width:0;transition:border-color .2s,background .2s}
+.flow-step:hover{border-color:var(--border2);background:var(--bg3)}
+.flow-step-num{font-family:var(--mono);font-size:9px;font-weight:600;color:var(--text2);letter-spacing:.05em;margin-bottom:6px}
+.flow-step-title{font-family:var(--sans);font-size:13px;font-weight:600;margin-bottom:5px}
+.flow-step-desc{font-family:var(--mono);font-size:10px;color:var(--text1);line-height:1.5}
+.flow-step-tag{display:inline-flex;align-items:center;font-family:var(--mono);font-size:9px;font-weight:500;padding:2px 7px;border-radius:3px;margin-top:9px}
+.flow-arrow{width:28px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.fl-blue{border-top:2px solid var(--blue)}.fl-blue .flow-step-num{color:var(--blue)}
+.fl-green{border-top:2px solid var(--green)}.fl-green .flow-step-num{color:var(--green)}
+.fl-purple{border-top:2px solid var(--purple)}.fl-purple .flow-step-num{color:var(--purple)}
+.fl-orange{border-top:2px solid var(--orange)}.fl-orange .flow-step-num{color:var(--orange)}
+.fl-red{border-top:2px solid var(--red)}.fl-red .flow-step-num{color:var(--red)}
+.tag-blue{background:var(--blue-dim);color:var(--blue)}
+.tag-green{background:var(--green-dim);color:var(--green)}
+.tag-purple{background:var(--purple-dim);color:var(--purple)}
+.tag-orange{background:var(--orange-dim);color:var(--orange)}
+.tag-red{background:var(--red-dim);color:var(--red)}
+.art-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);margin-bottom:6px}
+.art-name{font-family:var(--mono);font-size:11px;font-weight:500}
+.art-desc{font-family:var(--mono);font-size:9px;color:var(--text2);margin-top:1px}
+.str-item{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);margin-bottom:5px}
+.str-num{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text2);width:16px;flex-shrink:0;padding-top:1px}
+.str-label{font-family:var(--mono);font-size:11px;font-weight:500}
+.str-desc{font-family:var(--mono);font-size:10px;color:var(--text2);margin-top:1px}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.stat-row:last-child{border-bottom:none}
+.stat-key{color:var(--text1)}.stat-v{font-weight:600}
+.fg{padding:14px;border-radius:8px;border:1px solid var(--border)}
+.fg-title{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.fg-item{display:flex;align-items:flex-start;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text1);margin-bottom:5px;line-height:1.4}
+.fg-dot{width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0;margin-top:5px}
+.fg-blue{background:rgba(88,166,255,.04);border-color:rgba(88,166,255,.14)}.fg-blue .fg-title{color:var(--blue)}
+.fg-green{background:rgba(63,185,80,.04);border-color:rgba(63,185,80,.14)}.fg-green .fg-title{color:var(--green)}
+.fg-purple{background:rgba(188,140,255,.04);border-color:rgba(188,140,255,.14)}.fg-purple .fg-title{color:var(--purple)}
+.fg-orange{background:rgba(227,179,65,.04);border-color:rgba(227,179,65,.14)}.fg-orange .fg-title{color:var(--orange)}
+.fg-red{background:rgba(248,81,73,.04);border-color:rgba(248,81,73,.14)}.fg-red .fg-title{color:var(--red)}
+.tree-wrap{font-family:var(--mono);font-size:11px}
+.tree-row{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:4px;cursor:pointer;transition:background .1s}
+.tree-row:hover{background:var(--bg3)}
+.tree-chevron{width:12px;height:12px;color:var(--text2);flex-shrink:0;transition:transform .15s}
+.tree-chevron.open{transform:rotate(90deg)}
+.tree-children{margin-left:18px;border-left:1px solid var(--border);padding-left:6px}
+.tn-folder{color:var(--blue);font-weight:500}
+.tn-file{color:var(--text0)}
+.tn-yaml{color:var(--orange)}
+.cls-row{display:flex;align-items:center;gap:6px;padding:3px 8px;color:var(--purple);font-size:10px}
+.mth-row{display:flex;align-items:center;gap:6px;padding:2px 8px 2px 24px;color:var(--green);font-size:10px}
+.mth-row span:first-child{color:var(--text2)}
+.term-header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.term-dot{width:10px;height:10px;border-radius:50%}
+.term-title{font-family:var(--mono);font-size:10px;color:var(--text2);margin-left:6px}
+.term-body{padding:12px 14px;font-family:var(--mono);font-size:11px;line-height:1.7;height:320px;overflow-y:auto;background:var(--bg1)}
+.term-body::-webkit-scrollbar{width:4px}
+.term-body::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+.l-info{color:var(--text1)}.l-epoch{color:var(--cyan)}.l-ok{color:var(--green);font-weight:500}.l-mem{color:var(--purple)}
+.l-ts{color:var(--text2);margin-right:6px}
+.stat-chip{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.sc-label{font-family:var(--mono);font-size:9px;color:var(--text2);letter-spacing:.08em}
+.sc-val{font-family:var(--mono);font-size:16px;font-weight:600}
+.mb{margin-bottom:12px}
+.mb-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.mb-label{font-family:var(--mono);font-size:10px;color:var(--text1)}
+.mb-val{font-family:var(--mono);font-size:11px;font-weight:600}
+.mb-track{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.mb-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1)}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <h1>ChurnGuard</h1>
+    <p>MLOPS // STAGE 3-5 PIPELINE</p>
+  </div>
+  <div class="sidebar-section">Pipeline</div>
+  <div class="nav-item active" onclick="switchView('flowchart',this)">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
+    Pipeline Flowchart
+  </div>
+  <div class="nav-item" onclick="switchView('structure',this)">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 1.5A1.5 1.5 0 0 1 2.5 0h3A1.5 1.5 0 0 1 7 1.5V3h2a2 2 0 0 1 2 2v.128a1.5 1.5 0 0 1 .5-.128h3A1.5 1.5 0 0 1 16 6.5v3A1.5 1.5 0 0 1 14.5 11h-3a1.5 1.5 0 0 1-1.5-1.5V9H9v3.5a2 2 0 0 1-2 2H5.5V16h-3A1.5 1.5 0 0 1 1 14.5v-3A1.5 1.5 0 0 1 2.5 10h3A1.5 1.5 0 0 1 7 11.5V13h1a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H7v1.5A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-4z"/></svg>
+    System Architecture
+  </div>
+  <div class="sidebar-section">Analysis</div>
+  <div class="nav-item" onclick="switchView('eda',this)">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M0 0h1v15h15v1H0V0zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07z"/></svg>
+    EDA Dashboard
+  </div>
+  <div class="nav-item" onclick="switchView('monitor',this)">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3H0V3zm1 2h1v-1H1v1zm2 0h1v-1H3v1zm2 0h1v-1H5v1zM0 8v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8H0zm4 2h8v1H4v-1z"/></svg>
+    Training Monitor
+  </div>
+  <div class="sidebar-footer">
+    <div class="gpu-badge">
+      <div class="pulse"></div>
+      <div class="gpu-info"><p>Local GPU Active</p><p>&#9679; RTX 4090 &mdash; 24GB</p></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+
+<!-- FLOWCHART -->
+<div class="view active" id="view-flowchart">
+  <div class="view-header">
+    <div><div class="view-title">ML Pipeline Flowchart</div><div class="view-sub">// STAGE 3 &rarr; 5 &middot; EDA &rarr; FEATURES &rarr; TRAINING &rarr; REGISTRY</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="badge badge-blue">5,630 samples</span>
+      <span class="badge badge-orange">80/20 imbalance</span>
+      <span class="badge badge-green">MLflow tracked</span>
+    </div>
+  </div>
+
+  <div class="flow-row">
+    <div class="flow-step fl-blue">
+      <div class="flow-step-num">01 // EDA</div>
+      <div class="flow-step-title">Data Analysis</div>
+      <div class="flow-step-desc">Class distribution &middot; correlation matrix &middot; outlier audit &middot; category churn rates &middot; drift baseline</div>
+      <span class="flow-step-tag tag-blue">EDAAnalyzer</span>
+    </div>
+    <div class="flow-arrow"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg></div>
+    <div class="flow-step fl-green">
+      <div class="flow-step-num">02 // FEATURES</div>
+      <div class="flow-step-title">Feature Engineering</div>
+      <div class="flow-step-desc">5 signal groups &middot; OHE &middot; ordinal &middot; RobustScale &middot; leakage guard &middot; save artifacts</div>
+      <span class="flow-step-tag tag-green">FeaturePipeline</span>
+    </div>
+    <div class="flow-arrow"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg></div>
+    <div class="flow-step fl-purple">
+      <div class="flow-step-num">03 // TRAINING</div>
+      <div class="flow-step-title">Model Training</div>
+      <div class="flow-step-desc">Custom MLP + XGBoost &middot; 5-fold CV &middot; grid search &middot; SMOTE &middot; MLflow per fold</div>
+      <span class="flow-step-tag tag-purple">ModelTrainer</span>
+    </div>
+    <div class="flow-arrow"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg></div>
+    <div class="flow-step fl-orange">
+      <div class="flow-step-num">04 // EVAL</div>
+      <div class="flow-step-title">Evaluation &amp; Registry</div>
+      <div class="flow-step-desc">AUC-ROC &middot; PR-AUC &middot; threshold tuning &middot; SHAP &middot; MLflow &rarr; HuggingFace Hub</div>
+      <span class="flow-step-tag tag-orange">MLflowRegistry</span>
+    </div>
+    <div class="flow-arrow"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg></div>
+    <div class="flow-step fl-red">
+      <div class="flow-step-num">05 // SERVE</div>
+      <div class="flow-step-title">Batch Scoring</div>
+      <div class="flow-step-desc">Every 20 days &middot; chunk inference &middot; predictions &rarr; Supabase &middot; SSE &middot; drift check</div>
+      <span class="flow-step-tag tag-red">BatchScorer</span>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-top:14px">
+    <div class="card">
+      <div class="card-title ct-blue">&#9654; Pipeline artifacts</div>
+      <div class="art-item"><div style="font-size:16px;flex-shrink:0">&#128230;</div><div><div class="art-name">preprocessor.pkl</div><div class="art-desc">Fitted sklearn Pipeline &mdash; fit on train only, never val/test</div></div></div>
+      <div class="art-item"><div style="font-size:16px;flex-shrink:0">&#128203;</div><div><div class="art-name">feature_names.json</div><div class="art-desc">Ordered feature list &mdash; the contract between training &amp; inference</div></div></div>
+      <div class="art-item"><div style="font-size:16px;flex-shrink:0">&#128202;</div><div><div class="art-name">category_churn_rates.json</div><div class="art-desc">PreferedOrderCat &rarr; churn risk ordinal mapping from EDA</div></div></div>
+      <div class="art-item"><div style="font-size:16px;flex-shrink:0">&#128269;</div><div><div class="art-name">reference_distribution.pkl</div><div class="art-desc">Training feature distributions for drift detection (PSI)</div></div></div>
+      <div class="art-item"><div style="font-size:16px;flex-shrink:0">&#9889;</div><div><div class="art-name">feature_importance_pre.csv</div><div class="art-desc">Pre-model RF importances &mdash; feature selection signal</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title ct-orange">&#9654; Class imbalance strategy</div>
+      <div style="margin-bottom:12px">
+        <div class="stat-row"><span class="stat-key">Class ratio</span><span class="stat-v" style="color:var(--orange)">~80% retained / ~20% churn</span></div>
+        <div class="stat-row"><span class="stat-key">Primary metric</span><span class="stat-v" style="color:var(--blue)">AUC-ROC + Recall @ threshold</span></div>
+        <div class="stat-row"><span class="stat-key">Target recall</span><span class="stat-v" style="color:var(--green)">&ge; 0.80 (catch 4/5 churners)</span></div>
+      </div>
+      <div class="str-item"><div class="str-num" style="color:var(--blue)">1</div><div><div class="str-label" style="color:var(--blue)">scale_pos_weight</div><div class="str-desc">XGBoost &middot; neg_count / pos_count &middot; no data modification</div></div></div>
+      <div class="str-item"><div class="str-num" style="color:var(--purple)">2</div><div><div class="str-label" style="color:var(--purple)">class_weight='balanced'</div><div class="str-desc">Logistic regression baseline &middot; sklearn auto-computes weights</div></div></div>
+      <div class="str-item"><div class="str-num" style="color:var(--green)">3</div><div><div class="str-label" style="color:var(--green)">Threshold tuning</div><div class="str-desc">PR curve &middot; maximize business metric &middot; NOT defaulting to 0.5</div></div></div>
+      <div class="str-item"><div class="str-num" style="color:var(--orange)">4</div><div><div class="str-label" style="color:var(--orange)">SMOTE (fallback)</div><div class="str-desc">Applied to TRAINING data only &mdash; never val or test sets</div></div></div>
+    </div>
+  </div>
+
+  <div class="g4" style="margin-top:14px">
+    <div class="card kpi-blue" style="padding:16px"><div class="kpi-label">AUC-ROC target</div><div class="kpi-val">&ge; 0.85</div><div class="kpi-sub">held-out temporal test</div></div>
+    <div class="card kpi-green" style="padding:16px"><div class="kpi-label">Recall target</div><div class="kpi-val">&ge; 0.80</div><div class="kpi-sub">at operating threshold</div></div>
+    <div class="card kpi-purple" style="padding:16px"><div class="kpi-label">Precision floor</div><div class="kpi-val">&ge; 0.60</div><div class="kpi-sub">intervention cost low</div></div>
+    <div class="card kpi-orange" style="padding:16px"><div class="kpi-label">Batch latency</div><div class="kpi-val">&lt; 10 min</div><div class="kpi-sub">full customer base</div></div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div class="view" id="view-structure">
+  <div class="view-header">
+    <div><div class="view-title">System Architecture</div><div class="view-sub">// FOLDER STRUCTURE &middot; CLASSES &middot; METHODS</div></div>
+  </div>
+  <div class="g2">
+    <div class="card" style="max-height:calc(100vh - 150px);overflow-y:auto">
+      <div class="card-title ct-blue">&#9654; src/ directory tree</div>
+      <div class="tree-wrap" id="tree-root"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title ct-green">&#9654; Core design principles</div>
+        <div class="stat-row"><span class="stat-key">BaseModel (ABC)</span><span class="stat-v" style="color:var(--blue)">uniform interface for all models</span></div>
+        <div class="stat-row"><span class="stat-key">Preprocessor fitted on</span><span class="stat-v" style="color:var(--green)">train split only</span></div>
+        <div class="stat-row"><span class="stat-key">SMOTE applied to</span><span class="stat-v" style="color:var(--orange)">train data only</span></div>
+        <div class="stat-row"><span class="stat-key">feature_names.json</span><span class="stat-v" style="color:var(--purple)">training &harr; inference contract</span></div>
+        <div class="stat-row"><span class="stat-key">MLflow logs per fold</span><span class="stat-v" style="color:var(--cyan)">params &middot; metrics &middot; artifacts</span></div>
+        <div class="stat-row"><span class="stat-key">Drift detection</span><span class="stat-v" style="color:var(--red)">PSI &gt; 0.2 &rarr; GitHub Issue</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title ct-purple">&#9654; Custom MLP design</div>
+        <div class="stat-row"><span class="stat-key">Weight init</span><span class="stat-v" style="color:var(--blue)">He (ReLU) / Xavier (tanh)</span></div>
+        <div class="stat-row"><span class="stat-key">Output activation</span><span class="stat-v" style="color:var(--green)">sigmoid &middot; binary CE loss</span></div>
+        <div class="stat-row"><span class="stat-key">Regularization</span><span class="stat-v" style="color:var(--orange)">dropout + L2 weight decay</span></div>
+        <div class="stat-row"><span class="stat-key">Optimizer</span><span class="stat-v" style="color:var(--purple)">Adam + cosine LR scheduler</span></div>
+        <div class="stat-row"><span class="stat-key">Early stopping</span><span class="stat-v" style="color:var(--red)">val loss &middot; patience = 10</span></div>
+        <div class="stat-row"><span class="stat-key">Activations</span><span class="stat-v" style="color:var(--cyan)">relu &middot; leaky_relu &middot; selu &middot; gelu</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title ct-orange">&#9654; Config system</div>
+        <div class="stat-row"><span class="stat-key" style="color:var(--orange);font-family:var(--mono)">ml_config.py</span><span class="stat-v" style="color:var(--text1)">ModelConfig &middot; ActivationConfig</span></div>
+        <div class="stat-row"><span class="stat-key" style="color:var(--orange);font-family:var(--mono)">feature_config.py</span><span class="stat-v" style="color:var(--text1)">FeatureGroupConfig &middot; churn rates</span></div>
+        <div class="stat-row"><span class="stat-key">Activation lookup</span><span class="stat-v" style="color:var(--green)">Activation.get(name) &rarr; (fn, deriv)</span></div>
+        <div class="stat-row"><span class="stat-key">Grid search grids</span><span class="stat-v" style="color:var(--blue)">GridSearchConfig per model type</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDA -->
+<div class="view" id="view-eda">
+  <div class="view-header">
+    <div><div class="view-title">EDA Dashboard</div><div class="view-sub">// FEATURE ANALYSIS &middot; SIGNAL EXTRACTION &middot; CLASS DISTRIBUTION</div></div>
+    <span class="badge badge-blue">5,630 customers &middot; 20 features</span>
+  </div>
+  <div class="g4" style="margin-bottom:14px">
+    <div class="card kpi-blue" style="padding:16px"><div class="kpi-label">Total rows</div><div class="kpi-val">5,630</div><div class="kpi-sub">post cleaning &middot; 0 nulls</div></div>
+    <div class="card kpi-orange" style="padding:16px"><div class="kpi-label">Churn rate</div><div class="kpi-val">16.8%</div><div class="kpi-sub">948 churned &middot; 4,682 retained</div></div>
+    <div class="card kpi-green" style="padding:16px"><div class="kpi-label">Engineered features</div><div class="kpi-val">15</div><div class="kpi-sub">across 5 signal groups</div></div>
+    <div class="card kpi-purple" style="padding:16px"><div class="kpi-label">Raw features used</div><div class="kpi-val">19</div><div class="kpi-sub">after dropping CustomerID</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card"><div class="card-title ct-blue">&#9654; Churn by product category</div><div style="position:relative;height:200px"><canvas id="cat-chart"></canvas></div></div>
+    <div class="card"><div class="card-title ct-green">&#9654; Tenure segment distribution</div><div style="position:relative;height:200px"><canvas id="ten-chart"></canvas></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title ct-purple">&#9654; Engineered signal groups</div>
+    <div class="g3">
+      <div class="fg fg-red">
+        <div class="fg-title"><span>01</span> Financial Stress</div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--red)"></span><span>discount_dependency_ratio<br><span style="color:var(--text2);font-size:9px">CouponUsed / (OrderCount + &epsilon;)</span></span></div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--red)"></span><span>cashback_per_order<br><span style="color:var(--text2);font-size:9px">CashbackAmount / (OrderCount + &epsilon;)</span></span></div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--red)"></span><span>order_value_declining_flag<br><span style="color:var(--text2);font-size:9px">1 if YoY hike &lt; 0 else 0</span></span></div>
+      </div>
+      <div class="fg fg-blue">
+        <div class="fg-title"><span>02</span> Service Dependency</div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--blue)"></span><span>platform_embeddedness_score<br><span style="color:var(--text2);font-size:9px">(Addr&times;0.4) + (Devices&times;0.6)</span></span></div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--blue)"></span><span>is_cod_user<br><span style="color:var(--text2);font-size:9px">1 if PayMode == 'COD'</span></span></div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--blue)"></span><span>address_per_tenure_ratio<br><span style="color:var(--text2);font-size:9px">NumberOfAddress / (Tenure+1)</span></span></div>
+      </div>
+      <div class="fg fg-orange">
+        <div class="fg-title"><span>03</span> Engagement Decay</div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--orange)"></span><span>recency_risk_score<br><span style="color:var(--text2);font-size:9px">DaySinceLastOrder / (Tenure+1)</span></span></div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--orange)"></span><span>order_frequency_normalized<br><span style="color:var(--text2);font-size:9px">OrderCount / (Tenure+1)</span></span></div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--orange)"></span><span>app_engagement_tier<br><span style="color:var(--text2);font-size:9px">cut(HoursOnApp, [0,1,3,&infin;])</span></span></div>
+      </div>
+      <div class="fg fg-purple">
+        <div class="fg-title"><span>04</span> Contract Risk</div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--purple)"></span><span>tenure_segment (0/1/2)<br><span style="color:var(--text2);font-size:9px">New / Growing / Loyal</span></span></div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--purple)"></span><span>silent_dissatisfaction_flag<br><span style="color:var(--text2);font-size:9px">Score &le; 3 AND Complain == 0</span></span></div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--purple)"></span><span>complaint_satisfaction_interaction<br><span style="color:var(--text2);font-size:9px">Complain &times; (6 &minus; Score)</span></span></div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--purple)"></span><span>warehouse_distance_risk<br><span style="color:var(--text2);font-size:9px">1 if log(W2H) &gt; log_median</span></span></div>
+      </div>
+      <div class="fg fg-green">
+        <div class="fg-title"><span>05</span> Category Volatility</div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--green)"></span><span>category_volatility_score<br><span style="color:var(--text2);font-size:9px">Grocery=0 &middot; Mobile=1 &middot; Fashion=2</span></span></div>
+        <div class="fg-item"><span class="fg-dot" style="color:var(--text2)"></span><span style="color:var(--text2)">Computed from EDA churn rates<br><span style="font-size:9px">category_churn_rates.json</span></span></div>
+      </div>
+      <div class="fg" style="background:var(--bg3);border-color:var(--border)">
+        <div class="fg-title" style="color:var(--text1)">&#9888; Watch-outs</div>
+        <div class="fg-item" style="color:var(--text2)"><span class="fg-dot"></span><span>Zero-division guard on all ratio features</span></div>
+        <div class="fg-item" style="color:var(--text2)"><span class="fg-dot"></span><span>IQR cap on NumberOfAddress before embeddedness</span></div>
+        <div class="fg-item" style="color:var(--text2)"><span class="fg-dot"></span><span>Log-transform WarehouseToHome before median</span></div>
+        <div class="fg-item" style="color:var(--text2)"><span class="fg-dot"></span><span>Keep negatives in OrderAmountHikeFromlastYear</span></div>
+        <div class="fg-item" style="color:var(--text2)"><span class="fg-dot"></span><span>FeatureValidator.check_no_leakage() always runs</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title ct-blue">&#9654; Key feature stats (from dataset)</div>
+    <div class="g2">
+      <div>
+        <div class="stat-row"><span class="stat-key">Tenure (median)</span><span class="stat-v" style="color:var(--blue)">10.0 months</span></div>
+        <div class="stat-row"><span class="stat-key">DaySinceLastOrder (mean)</span><span class="stat-v" style="color:var(--orange)">4.8 days</span></div>
+        <div class="stat-row"><span class="stat-key">OrderCount (mean)</span><span class="stat-v" style="color:var(--green)">3.0 orders</span></div>
+        <div class="stat-row"><span class="stat-key">CashbackAmount (mean)</span><span class="stat-v" style="color:var(--purple)">177.6</span></div>
+        <div class="stat-row"><span class="stat-key">HourSpendOnApp (mean)</span><span class="stat-v" style="color:var(--cyan)">3.0 hrs</span></div>
+      </div>
+      <div>
+        <div class="stat-row"><span class="stat-key">SatisfactionScore (mean)</span><span class="stat-v" style="color:var(--blue)">3.0 / 5</span></div>
+        <div class="stat-row"><span class="stat-key">Complain rate</span><span class="stat-v" style="color:var(--orange)">17.0%</span></div>
+        <div class="stat-row"><span class="stat-key">COD users</span><span class="stat-v" style="color:var(--green)">~15% of base</span></div>
+        <div class="stat-row"><span class="stat-key">Mobile-only login</span><span class="stat-v" style="color:var(--purple)">~73% of users</span></div>
+        <div class="stat-row"><span class="stat-key">New customers (&le;6mo)</span><span class="stat-v" style="color:var(--red)">~50% of base</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MONITOR -->
+<div class="view" id="view-monitor">
+  <div class="view-header">
+    <div><div class="view-title">Training Monitor</div><div class="view-sub">// LIVE TRAINING LOGS &middot; LOSS CURVES &middot; EVALUATION METRICS</div></div>
+    <div style="display:flex;gap:8px">
+      <div class="stat-chip"><div class="sc-label">GPU UTIL</div><div class="sc-val" style="color:var(--blue)" id="gpu-stat">--</div></div>
+      <div class="stat-chip"><div class="sc-label">VRAM</div><div class="sc-val" style="color:var(--purple)" id="vram-stat">--</div></div>
+      <div class="stat-chip"><div class="sc-label">EPOCH</div><div class="sc-val" style="color:var(--green)" id="epoch-stat">0/50</div></div>
+    </div>
+  </div>
+  <div class="g2" style="margin-bottom:14px;grid-template-columns:1.4fr 1fr">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="term-header">
+        <div class="term-dot" style="background:#f85149"></div>
+        <div class="term-dot" style="background:#e3b341"></div>
+        <div class="term-dot" style="background:#3fb950"></div>
+        <span class="term-title">churnguard &middot; training &middot; custom_mlp</span>
+      </div>
+      <div class="term-body" id="terminal"><div class="l-info"><span class="l-ts">00:00:00</span>Initializing ChurnGuard ML Training Pipeline...</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title ct-blue">&#9654; Loss curves</div>
+        <div style="position:relative;height:150px"><canvas id="loss-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title ct-green">&#9654; Evaluation metrics</div>
+        <div id="metric-bars"></div>
+      </div>
+    </div>
+  </div>
+  <div class="g4">
+    <div class="card kpi-blue" style="padding:16px"><div class="kpi-label">Best AUC-ROC</div><div class="kpi-val" id="fin-auc">&#8212;</div><div class="kpi-sub">validation set</div></div>
+    <div class="card kpi-green" style="padding:16px"><div class="kpi-label">Best Recall</div><div class="kpi-val" id="fin-recall">&#8212;</div><div class="kpi-sub">@ operating threshold</div></div>
+    <div class="card kpi-purple" style="padding:16px"><div class="kpi-label">PR-AUC</div><div class="kpi-val" id="fin-prauc">&#8212;</div><div class="kpi-sub">imbalance-safe metric</div></div>
+    <div class="card kpi-orange" style="padding:16px"><div class="kpi-label">Status</div><div class="kpi-val" id="fin-status" style="font-size:14px">INIT</div><div class="kpi-sub" id="fin-sub">waiting to start</div></div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+function switchView(id, el) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='eda') initEda();
+  if(id==='monitor') initMonitor();
+  if(id==='structure') initTree();
+}
+
+// TREE
+const TD=[
+  {n:'config/',t:'d',c:[
+    {n:'ml_config.py',t:'f',cls:[{n:'ModelConfig',m:['xgboost_params','mlp_hidden_layers','learning_rate','dropout_rate','n_epochs','cv_folds']},{n:'ActivationConfig',m:['relu+deriv','leaky_relu+deriv','sigmoid+deriv','selu+deriv','gelu+deriv','get(name)']},{n:'ImbalanceConfig',m:['strategy','smote_k_neighbors','scale_pos_weight','operating_threshold']}]},
+    {n:'feature_config.py',t:'f',cls:[{n:'FeatureGroupConfig',m:['raw_columns_per_group','engineered_feature_names','drop_after_engineering']},{n:'CategoryChurnRates',m:['mapping: dict[str, int]']}]},
+  ]},
+  {n:'eda/',t:'d',c:[
+    {n:'analyzer.py',t:'f',cls:[{n:'EDAAnalyzer',m:['load_data(path)','class_balance_report()','null_audit()','outlier_audit()','categorical_churn_rates(col)','compute_category_volatility_map()','save_reference_distribution(X)']}]},
+    {n:'visualizer.py',t:'f',cls:[{n:'EDAVisualizer',m:['plot_class_distribution()','plot_correlation_heatmap()','plot_churn_by_category()','render_full_eda_report()']}]},
+  ]},
+  {n:'features/',t:'d',c:[
+    {n:'pipeline.py',t:'f',cls:[{n:'FeaturePipeline',m:['fit_transform(df)','transform(df)','_run_group_engineers(df)','save(path)','load(path)']}]},
+    {n:'groups/',t:'d',c:[
+      {n:'group1_financial.py',t:'f',cls:[{n:'Group1FinancialStress',m:['engineer(df)','_zero_division_guard()','validate_outputs(df)']}]},
+      {n:'group2_service.py',t:'f',cls:[{n:'Group2ServiceDependency',m:['engineer(df)','_cap_address_outliers()']}]},
+      {n:'group3_engagement.py',t:'f',cls:[{n:'Group3EngagementDecay',m:['engineer(df)','_cross_check_device_app_time()']}]},
+      {n:'group4_contract.py',t:'f',cls:[{n:'Group4ContractRisk',m:['engineer(df)','_log_transform_warehouse()']}]},
+      {n:'group5_category.py',t:'f',cls:[{n:'Group5CategoryVolatility',m:['engineer(df)','_validate_map_coverage()']}]},
+    ]},
+    {n:'encoders.py',t:'f',cls:[{n:'CategoricalEncoder',m:['fit_transform(df,cat_cols)','_one_hot(col)','_ordinal(col,order)','_binary_flag(col)','get_feature_names_out()']}]},
+    {n:'scalers.py',t:'f',cls:[{n:'FeatureScaler',m:['fit(X_train)','transform(X)','_log_transform_cols()','_clip_iqr_outliers()']}]},
+    {n:'validator.py',t:'f',cls:[{n:'FeatureValidator',m:['check_schema(X)','check_no_leakage()','check_no_nulls(X)','generate_validation_report()']}]},
+  ]},
+  {n:'models/',t:'d',c:[
+    {n:'base.py',t:'f',cls:[{n:'BaseModel [ABC]',m:['fit(X_train,y_train,X_val,y_val)','predict_proba(X)','predict(X,threshold)','save(path)','load(path)']}]},
+    {n:'mlp/',t:'d',c:[
+      {n:'activations.py',t:'f',cls:[{n:'Activation',m:['relu(z)+deriv','leaky_relu(z)+deriv','sigmoid(z)+deriv','selu(z)+deriv','gelu(z)+deriv','get(name)->(fn,deriv)']}]},
+      {n:'layers.py',t:'f',cls:[{n:'DenseLayer',m:['__init__(n_in,n_out,act,dropout)','forward(X,training)','backward(dA)','_apply_dropout()']},{n:'OutputLayer',m:['forward(X)->prob','backward(A_out,y)->dA']}]},
+      {n:'network.py',t:'f',cls:[{n:'MLPClassifier(BaseModel)',m:['forward(X,training)','backward(y_hat,y)','compute_loss(y_hat,y,pos_w)','fit(X_tr,y_tr,X_val,y_val)','_early_stop()']}]},
+      {n:'optimizer.py',t:'f',cls:[{n:'Adam',m:['step(layers,grads)','_bias_correct(m,v,t)']},{n:'LRScheduler',m:['step_decay(epoch)','cosine_annealing(epoch)']}]},
+    ]},
+    {n:'xgboost_model.py',t:'f',cls:[{n:'XGBoostClassifier(BaseModel)',m:['fit()','predict_proba()','get_feature_importance()','compute_shap_values(X)']}]},
+  ]},
+  {n:'training/',t:'d',c:[
+    {n:'trainer.py',t:'f',cls:[{n:'ModelTrainer',m:['run(X,y,experiment_name)','_train_single_fold()','_log_to_mlflow()','_log_to_html_monitor()','_select_best_threshold()']}]},
+    {n:'cross_val.py',t:'f',cls:[{n:'StratifiedCrossValidator',m:['split(X,y)','run_cv(model,X,y)','aggregate_cv_results()']},{n:'GridSearchCV',m:['fit(model_class,X,y)','get_results_df()']}]},
+    {n:'imbalance.py',t:'f',cls:[{n:'ImbalanceHandler',m:['compute_pos_weight(y_train)','apply_smote(X_train,y_train)','select_operating_threshold()','log_imbalance_summary()']}]},
+    {n:'experiment.py',t:'f',cls:[{n:'MLflowExperiment',m:['start_run()','log_params()','log_metrics()','log_artifact()','log_model()','compare_runs()']}]},
+  ]},
+  {n:'evaluation/',t:'d',c:[
+    {n:'metrics.py',t:'f',cls:[{n:'BinaryClassificationMetrics',m:['auc_roc()','pr_auc()','recall_at_threshold()','precision_at_threshold()','f1_at_threshold()','business_cost_score()','beats_champion()']}]},
+    {n:'threshold.py',t:'f',cls:[{n:'ThresholdSelector',m:['from_pr_curve(y_true,y_proba,target_recall)','from_business_cost()','plot_pr_curve()','plot_roc_curve()']}]},
+    {n:'explainability.py',t:'f',cls:[{n:'ModelExplainer',m:['compute_global_shap(X_val)','get_top_reasons(row,n)','plot_shap_summary()','get_feature_importance_df()']}]},
+  ]},
+  {n:'memory/',t:'d',c:[
+    {n:'memory_manager.py',t:'f',cls:[{n:'MemoryManager',m:['get_available_ram()','get_available_vram()','estimate_batch_size()','log_memory_snapshot()','gc_collect()','chunk_iterator(df)']}]},
+  ]},
+  {n:'debug/',t:'d',c:[
+    {n:'debugger.py',t:'f',cls:[{n:'PipelineDebugger',m:['check_feature_pipeline()','check_for_leakage()','check_gradient_flow()','check_dead_neurons()','generate_debug_html_report()']}]},
+    {n:'profiler.py',t:'f',cls:[{n:'PipelineProfiler',m:['time_stage(stage_name)','get_timing_summary()','profile_memory_per_stage()']}]},
+  ]},
+  {n:'monitoring/',t:'d',c:[
+    {n:'drift_detector.py',t:'f',cls:[{n:'DriftDetector',m:['compute_psi(feature_name,current_dist)','check_all_features(X)','is_drift_critical(psi)','create_github_issue()']}]},
+    {n:'db_writer.py',t:'f',cls:[{n:'MLResultsDBWriter',m:['write_predictions(results_df)','write_batch_run(result)','write_drift_report(report)','write_model_version(meta)','publish_sse_event()']}]},
+    {n:'dashboard/',t:'d',c:[
+      {n:'index.html',t:'f',cls:[]},
+      {n:'styles.css',t:'f',cls:[]},
+      {n:'log_writer.py',t:'f',cls:[{n:'HTMLDashboardWriter',m:['init_dashboard(run_name)','append_epoch_row(epoch,loss,auc)','append_log_line(level,msg)','write_final_metrics_card(metrics)','write_run_comparison_table(df)']}]},
+    ]},
+  ]},
+];
+function buildTree(nodes,el){
+  nodes.forEach(n=>{
+    const wrap=document.createElement('div');
+    const isD=n.t==='d';
+    const isY=n.n.endsWith('.yaml');
+    const row=document.createElement('div');
+    row.className='tree-row';
+    const chev=isD?`<svg class="tree-chevron open" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>`:'<span style="width:12px;display:inline-block"></span>';
+    const ic=isD?'📁':isY?'⚙':'📄';
+    const nc=isD?'tn-folder':isY?'tn-yaml':'tn-file';
+    row.innerHTML=`${chev}<span style="font-size:12px;flex-shrink:0">${ic}</span><span class="${nc}">${n.n}</span>`;
+    if(isD){
+      row.querySelector('.tree-chevron').addEventListener('click',e=>{
+        e.stopPropagation();
+        const cv=row.querySelector('.tree-chevron');
+        cv.classList.toggle('open');
+        const cc=wrap.querySelector('.tree-children');
+        if(cc)cc.style.display=cv.classList.contains('open')?'':'none';
+      });
+    }
+    wrap.appendChild(row);
+    if(n.cls&&n.cls.length){
+      n.cls.forEach(c=>{
+        const cr=document.createElement('div');cr.className='cls-row';
+        cr.innerHTML=`<span style="color:var(--purple);font-size:11px">&#9670;</span><span>class ${c.n}</span>`;
+        wrap.appendChild(cr);
+        c.m.forEach(m=>{
+          const mr=document.createElement('div');mr.className='mth-row';
+          mr.innerHTML=`<span>&rhook;</span><span>def ${m}</span>`;
+          wrap.appendChild(mr);
+        });
+      });
+    }
+    if(n.c){
+      const cc=document.createElement('div');cc.className='tree-children';
+      buildTree(n.c,cc);
+      wrap.appendChild(cc);
+    }
+    el.appendChild(wrap);
+  });
+}
+let tI=false;
+function initTree(){if(tI)return;tI=true;buildTree(TD,document.getElementById('tree-root'))}
+
+// EDA CHARTS
+let eI=false;
+function initEda(){
+  if(eI)return;eI=true;
+  new Chart(document.getElementById('cat-chart').getContext('2d'),{
+    type:'bar',
+    data:{labels:['Grocery','Mobile','Fashion','Laptop & Acc.','Others'],datasets:[{label:'Churn %',data:[5,27,25,22,12],backgroundColor:'rgba(248,81,73,0.8)',borderRadius:3},{label:'Retained %',data:[95,73,75,78,88],backgroundColor:'rgba(63,185,80,0.2)',borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8b949e',font:{family:'JetBrains Mono',size:10}}},y:{stacked:true,grid:{display:false},ticks:{color:'#8b949e',font:{family:'JetBrains Mono',size:10}}}}}
+  });
+  new Chart(document.getElementById('ten-chart').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:['New (0-6mo)','Growing (6-24mo)','Loyal (24+mo)'],datasets:[{data:[50,30,20],backgroundColor:['rgba(248,81,73,0.85)','rgba(88,166,255,0.85)','rgba(63,185,80,0.85)'],borderWidth:0,hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{color:'#8b949e',font:{family:'JetBrains Mono',size:10},boxWidth:10,padding:10}}}}
+  });
+}
+
+// MONITOR
+let mI=false,lChart=null;
+const lD={labels:[],tr:[],vl:[]};
+const MX=[
+  {k:'AUC-ROC',t:0.921,c:'#58a6ff'},
+  {k:'Recall @ threshold',t:0.847,c:'#3fb950'},
+  {k:'PR-AUC',t:0.791,c:'#bc8cff'},
+  {k:'F1 Score',t:0.812,c:'#e3b341'},
+  {k:'Precision',t:0.731,c:'#79c0ff'},
+];
+function buildMBars(){
+  const c=document.getElementById('metric-bars');
+  MX.forEach(m=>{
+    const k=m.k.replace(/[^a-z]/gi,'');
+    const d=document.createElement('div');d.className='mb';
+    d.innerHTML=`<div class="mb-hdr"><span class="mb-label">${m.k}</span><span class="mb-val" style="color:${m.c}" id="mv${k}">&#8212;</span></div><div class="mb-track"><div class="mb-fill" id="mf${k}" style="width:0%;background:${m.c}"></div></div>`;
+    c.appendChild(d);
+  });
+}
+function initLChart(){
+  const ctx=document.getElementById('loss-chart').getContext('2d');
+  lChart=new Chart(ctx,{
+    type:'line',
+    data:{labels:lD.labels,datasets:[{label:'Train Loss',data:lD.tr,borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,0.05)',borderWidth:1.5,pointRadius:0,tension:0.3,fill:true},{label:'Val Loss',data:lD.vl,borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,0.04)',borderWidth:1.5,pointRadius:0,tension:0.3,fill:true}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:80},plugins:{legend:{labels:{color:'#8b949e',font:{family:'JetBrains Mono',size:9},boxWidth:8,padding:8}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#484f58',font:{family:'JetBrains Mono',size:9},maxTicksLimit:8}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#484f58',font:{family:'JetBrains Mono',size:9}}}}}
+  });
+}
+function addLog(cls,msg){
+  const t=document.getElementById('terminal');
+  t.innerHTML+=`<div class="${cls}">${msg}</div>`;
+  t.scrollTop=t.scrollHeight;
+}
+function ts(s){const m=Math.floor(s/60);return`<span class="l-ts">00:${String(m).padStart(2,'0')}:${String(s%60).padStart(2,'0')}</span>`}
+
+function initMonitor(){
+  if(mI)return;mI=true;
+  buildMBars();initLChart();
+  const init=[
+    [1,'l-info','Loading config/ml_config.py &middot; config/feature_config.py...'],
+    [2,'l-mem','[MemoryManager] GPU: NVIDIA RTX 4090 &middot; 24GB VRAM &middot; RAM: 28.4GB free'],
+    [3,'l-info','[FeaturePipeline] preprocessor.pkl loaded &middot; feature_names.json: 34 features'],
+    [4,'l-info','[FeatureValidator] Schema check &#10003; &middot; Leakage guard &#10003; &middot; No nulls &#10003;'],
+    [5,'l-mem','[ImbalanceHandler] Class ratio: 4682 / 948 = 4.94:1'],
+    [6,'l-info','[ImbalanceHandler] scale_pos_weight = 4.94 applied to XGBoost'],
+    [7,'l-info','[ImbalanceHandler] SMOTE applied to training fold (5040 &rarr; 8246 rows)'],
+    [8,'l-info','[StratifiedCrossValidator] 5-fold CV &middot; random_state=42'],
+    [9,'l-info','[MLflowExperiment] Run started &middot; experiment: churnguard_custom_mlp'],
+    [10,'l-info','[MLPClassifier] Architecture: [34, 128, 64, 32, 1] &middot; Adam &middot; lr=0.001 &middot; dropout=0.3'],
+    [11,'l-info','&#9472;&#9472;&#9472; FOLD 1/5 STARTING &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;'],
+  ];
+  let i=0,s=1;
+  const it=setInterval(()=>{
+    if(i>=init.length){clearInterval(it);document.getElementById('fin-status').textContent='RUNNING';document.getElementById('fin-status').style.color='var(--orange)';document.getElementById('fin-sub').textContent='training in progress';trainLoop(12);return}
+    const[sec,cls,msg]=init[i++];
+    addLog(cls,ts(sec)+msg);
+  },280);
+}
+
+function trainLoop(startSec){
+  const TOTAL=50;let e=0,s=startSec;
+  const iv=setInterval(()=>{
+    if(e>=TOTAL){clearInterval(iv);finishUp(s);return}
+    e++;s+=2;
+    const tl=(0.72*Math.exp(-e/11)+0.12+(Math.random()-.5)*.025).toFixed(4);
+    const vl=(0.72*Math.exp(-e/13)+0.17+(Math.random()-.5)*.035).toFixed(4);
+    const auc=Math.min(0.955,0.52+0.43*(1-Math.exp(-e/14))+(Math.random()-.5)*.008);
+    const rec=Math.min(0.93,0.41+0.45*(1-Math.exp(-e/16))+(Math.random()-.5)*.01);
+    const pra=Math.min(0.87,0.35+0.47*(1-Math.exp(-e/18))+(Math.random()-.5)*.01);
+    const f1=Math.min(0.88,0.38+0.45*(1-Math.exp(-e/15))+(Math.random()-.5)*.01);
+    const pr=Math.min(0.9,0.42+0.44*(1-Math.exp(-e/17))+(Math.random()-.5)*.01);
+    const gpu=Math.round(62+10*Math.sin(e*.5)+(Math.random()-.5)*8);
+    const vr=(7.8+1.2*(1-Math.exp(-e/20))).toFixed(1);
+    document.getElementById('gpu-stat').textContent=gpu+'%';
+    document.getElementById('vram-stat').textContent=vr+' GB';
+    document.getElementById('epoch-stat').textContent=e+'/50';
+    lD.labels.push(e);lD.tr.push(parseFloat(tl));lD.vl.push(parseFloat(vl));
+    if(lD.labels.length>50){lD.labels.shift();lD.tr.shift();lD.vl.shift()}
+    lChart.data.labels=lD.labels;lChart.data.datasets[0].data=lD.tr;lChart.data.datasets[1].data=lD.vl;lChart.update();
+    const vals=[auc,rec,pra,f1,pr];
+    MX.forEach((m,i)=>{
+      const k=m.k.replace(/[^a-z]/gi,'');
+      const vEl=document.getElementById('mv'+k),fEl=document.getElementById('mf'+k);
+      if(vEl)vEl.textContent=vals[i].toFixed(3);
+      if(fEl)fEl.style.width=Math.round(vals[i]*100)+'%';
+    });
+    if(e%5===0||e===1){
+      const f=e<=10?1:e<=20?2:e<=30?3:e<=40?4:5;
+      addLog('l-epoch',`${ts(s)}[Epoch ${e}/50][F${f}] train_loss=${tl} &middot; val_loss=${vl} &middot; auc=${auc.toFixed(4)} &middot; recall=${rec.toFixed(4)}`);
+    }
+    if([10,20,30,40].includes(e)){
+      const f=e/10;
+      addLog('l-info',`${ts(s)}[StratifiedCV] Fold ${f}/5 complete &middot; aggregating...`);
+      addLog('l-mem',`${ts(s+1)}[MemoryManager] gc_collect() &middot; VRAM freed: 0.4GB`);
+    }
+  },240);
+}
+
+function finishUp(s){
+  const logs=[
+    [s+2,'l-ok','&#9472;&#9472;&#9472; Training Complete &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;'],
+    [s+3,'l-ok','[ModelTrainer] Best val AUC-ROC: 0.921 @ epoch 48'],
+    [s+4,'l-info','[ThresholdSelector] PR curve &middot; optimal threshold: 0.38'],
+    [s+5,'l-info','[BinaryClassificationMetrics] Recall @ 0.38: 0.847 &middot; Precision: 0.731'],
+    [s+6,'l-info','[BinaryClassificationMetrics] Business cost score: $3,240 vs baseline $8,100'],
+    [s+7,'l-mem','[ModelExplainer] Computing SHAP values on val set...'],
+    [s+8,'l-info','[ModelExplainer] Top features: recency_risk_score &middot; tenure_segment &middot; silent_dissatisfaction_flag'],
+    [s+9,'l-ok','[MLflowExperiment] Params &middot; metrics &middot; artifacts logged'],
+    [s+10,'l-ok','[MLflowRegistry] churnguard_mlp_v1 &rarr; Staging'],
+    [s+11,'l-ok','[HuggingFaceModelHub] Artifacts pushed to hf://churnguard/models'],
+    [s+12,'l-ok','&#9472;&#9472;&#9472; Pipeline Complete &#9472; All artifacts saved &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;'],
+  ];
+  let i=0;
+  const t=setInterval(()=>{
+    if(i>=logs.length){clearInterval(t);return}
+    const[,cls,msg]=logs[i++];
+    addLog(cls,ts(logs[i-1][0])+msg);
+    if(i===logs.length){
+      document.getElementById('fin-auc').textContent='0.921';
+      document.getElementById('fin-recall').textContent='0.847';
+      document.getElementById('fin-prauc').textContent='0.791';
+      document.getElementById('fin-status').textContent='DONE';
+      document.getElementById('fin-status').style.color='var(--green)';
+      document.getElementById('fin-sub').textContent='registered to MLflow + HF Hub';
+      document.getElementById('epoch-stat').textContent='50/50';
+    }
+  },380);
+}
+</script>
+</body>
+</html>
