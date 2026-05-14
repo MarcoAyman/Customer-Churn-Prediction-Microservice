@@ -1,0 +1,77 @@
+{
+  "type": "categorical",
+  "n_categories": 3,
+  "distribution": [
+    {
+      "category": "1",
+      "count": 3666,
+      "pct": 0.6511545293072825
+    },
+    {
+      "category": "3",
+      "count": 1722,
+      "pct": 0.3058614564831261
+    },
+    {
+      "category": "2",
+      "count": 242,
+      "pct": 0.04298401420959148
+    }
+  ],
+  "distribution_plot": {
+    "path": "figures/cat__city_tier__distribution.png",
+    "caption": "Distribution of 3 categories across 5,630 customers. Horizontal bar chart chosen for readability at this category count."
+  },
+  "per_category_churn": {
+    "1": {
+      "count": 3666,
+      "churned": 532,
+      "retained": 3134,
+      "churn_rate": 0.14511729405346427
+    },
+    "2": {
+      "count": 242,
+      "churned": 48,
+      "retained": 194,
+      "churn_rate": 0.19834710743801653
+    },
+    "3": {
+      "count": 1722,
+      "churned": 368,
+      "retained": 1354,
+      "churn_rate": 0.21370499419279906
+    }
+  },
+  "stacked_churn_plot": {
+    "path": "figures/cat__city_tier__churn_stacked.png",
+    "caption": "Each bar spans 100% of customers inside that category. Red = churn rate. Orange dashed line = overall retention baseline \u2014 any category whose red segment extends PAST this line churns more than average (a hotspot)."
+  },
+  "overall_churn_rate": 0.16838365896980462,
+  "statistical_tests": {
+    "chi_squared": {
+      "statistic": 40.982404247736355,
+      "p_value": 1.2612000812079956e-09,
+      "dof": 2,
+      "reliable": true,
+      "narration": "\u03c7\u00b2 = 40.98 on 2 df. Highly significant (p < 0.0001). Tests whether the category proportions differ between churn and retained."
+    },
+    "cramers_v": {
+      "value": 0.08531875687625065,
+      "narration": "Cram\u00e9r's V = 0.085 \u2014 weak association with churn."
+    }
+  },
+  "narrative": {
+    "distribution": "'city_tier' has 3 category/ies across 5,630 customers. Most common: '1' (65.1%). Least common: '2' (4.3%).",
+    "churn_rates": "Overall churn rate = 16.8%. Highest-churn category: '3' at 21.4% (1.27\u00d7 the baseline). Lowest-churn category: '1' at 14.5% (0.86\u00d7 the baseline).",
+    "association": "\u03c7\u00b2 = 40.98 on 2 df. Highly significant (p < 0.0001). Tests whether the category proportions differ between churn and retained. Cram\u00e9r's V = 0.085 \u2014 weak association with churn."
+  },
+  "recommendation": {
+    "action": "keep_one_hot",
+    "rationale": "Weak association (Cram\u00e9r's V = 0.085). One-hot encode for completeness but deprioritise in feature selection.",
+    "engineering_ideas": [],
+    "hotspot_categories": [],
+    "hotspot_lift_used": 1.5
+  },
+  "feature_name": "city_tier",
+  "analyzer": "CategoricalAnalyzer"
+}

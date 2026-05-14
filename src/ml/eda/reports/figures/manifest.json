@@ -1,0 +1,293 @@
+{
+  "generated_at": "2026-05-05T15:02:48.120665+00:00",
+  "count": 41,
+  "entries": [
+    {
+      "path": "figures/global__class_balance__donut.png",
+      "caption": "Donut chart of the churn label. The hollow ring shows the proportional split; the centre displays the total count and overall churn rate. Green = retained, red = churned.",
+      "feature": null,
+      "plot_type": "donut",
+      "context": "global"
+    },
+    {
+      "path": "figures/global__correlation__heatmap.png",
+      "caption": "Pearson correlation matrix across numeric features. Red = negative correlation, blue = positive correlation, neutral background = near-zero. Values inside the cells are the correlation coefficients. Pairs with |r| \u2265 0.85 are flagged as redundant and are candidates for dropping.",
+      "feature": null,
+      "plot_type": "heatmap",
+      "context": "global"
+    },
+    {
+      "path": "figures/cohort__tenure_bucket.png",
+      "caption": "Churn rate per bucket of tenure_months. Orange dashed = overall rate (16.8%). Red dotted = 2.0\u00d7 hotspot threshold. Red bars have cleared the hotspot line \u2014 candidate segments for a binary flag in Stage 3.2.",
+      "feature": null,
+      "plot_type": "cohort_bar",
+      "context": "global"
+    },
+    {
+      "path": "figures/cohort__city_tier.png",
+      "caption": "Churn rate per bucket of city_tier. Orange dashed = overall rate (16.8%). Red dotted = 2.0\u00d7 hotspot threshold. Red bars have cleared the hotspot line \u2014 candidate segments for a binary flag in Stage 3.2.",
+      "feature": null,
+      "plot_type": "cohort_bar",
+      "context": "global"
+    },
+    {
+      "path": "figures/cohort__preferred_payment_mode.png",
+      "caption": "Churn rate per bucket of preferred_payment_mode. Orange dashed = overall rate (16.8%). Red dotted = 2.0\u00d7 hotspot threshold. Red bars have cleared the hotspot line \u2014 candidate segments for a binary flag in Stage 3.2.",
+      "feature": null,
+      "plot_type": "cohort_bar",
+      "context": "global"
+    },
+    {
+      "path": "figures/cat__gender__distribution.png",
+      "caption": "Distribution of 2 categories across 5,630 customers. Pie chart chosen for readability at this category count.",
+      "feature": "gender",
+      "plot_type": "distribution",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__gender__churn_stacked.png",
+      "caption": "Each bar spans 100% of customers inside that category. Red = churn rate. Orange dashed line = overall retention baseline \u2014 any category whose red segment extends PAST this line churns more than average (a hotspot).",
+      "feature": "gender",
+      "plot_type": "churn_stacked_bar",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__city_tier__distribution.png",
+      "caption": "Distribution of 3 categories across 5,630 customers. Horizontal bar chart chosen for readability at this category count.",
+      "feature": "city_tier",
+      "plot_type": "distribution",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__city_tier__churn_stacked.png",
+      "caption": "Each bar spans 100% of customers inside that category. Red = churn rate. Orange dashed line = overall retention baseline \u2014 any category whose red segment extends PAST this line churns more than average (a hotspot).",
+      "feature": "city_tier",
+      "plot_type": "churn_stacked_bar",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__marital_status__distribution.png",
+      "caption": "Distribution of 3 categories across 5,630 customers. Horizontal bar chart chosen for readability at this category count.",
+      "feature": "marital_status",
+      "plot_type": "distribution",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__marital_status__churn_stacked.png",
+      "caption": "Each bar spans 100% of customers inside that category. Red = churn rate. Orange dashed line = overall retention baseline \u2014 any category whose red segment extends PAST this line churns more than average (a hotspot).",
+      "feature": "marital_status",
+      "plot_type": "churn_stacked_bar",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__preferred_payment_mode__distribution.png",
+      "caption": "Distribution of 5 categories across 5,630 customers. Horizontal bar chart chosen for readability at this category count.",
+      "feature": "preferred_payment_mode",
+      "plot_type": "distribution",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__preferred_payment_mode__churn_stacked.png",
+      "caption": "Each bar spans 100% of customers inside that category. Red = churn rate. Orange dashed line = overall retention baseline \u2014 any category whose red segment extends PAST this line churns more than average (a hotspot).",
+      "feature": "preferred_payment_mode",
+      "plot_type": "churn_stacked_bar",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__preferred_login_device__distribution.png",
+      "caption": "Distribution of 2 categories across 5,630 customers. Pie chart chosen for readability at this category count.",
+      "feature": "preferred_login_device",
+      "plot_type": "distribution",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__preferred_login_device__churn_stacked.png",
+      "caption": "Each bar spans 100% of customers inside that category. Red = churn rate. Orange dashed line = overall retention baseline \u2014 any category whose red segment extends PAST this line churns more than average (a hotspot).",
+      "feature": "preferred_login_device",
+      "plot_type": "churn_stacked_bar",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__preferred_order_cat__distribution.png",
+      "caption": "Distribution of 5 categories across 5,630 customers. Horizontal bar chart chosen for readability at this category count.",
+      "feature": "preferred_order_cat",
+      "plot_type": "distribution",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__preferred_order_cat__churn_stacked.png",
+      "caption": "Each bar spans 100% of customers inside that category. Red = churn rate. Orange dashed line = overall retention baseline \u2014 any category whose red segment extends PAST this line churns more than average (a hotspot).",
+      "feature": "preferred_order_cat",
+      "plot_type": "churn_stacked_bar",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__complain__distribution.png",
+      "caption": "Distribution of 2 categories across 5,630 customers. Pie chart chosen for readability at this category count.",
+      "feature": "complain",
+      "plot_type": "distribution",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/cat__complain__churn_stacked.png",
+      "caption": "Each bar spans 100% of customers inside that category. Red = churn rate. Orange dashed line = overall retention baseline \u2014 any category whose red segment extends PAST this line churns more than average (a hotspot).",
+      "feature": "complain",
+      "plot_type": "churn_stacked_bar",
+      "context": "categorical"
+    },
+    {
+      "path": "figures/num__tenure_months__histogram.png",
+      "caption": "Histogram of tenure_months across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "tenure_months",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__tenure_months__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "tenure_months",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__order_count__histogram.png",
+      "caption": "Histogram of order_count across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "order_count",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__order_count__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "order_count",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__day_since_last_order__histogram.png",
+      "caption": "Histogram of day_since_last_order across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "day_since_last_order",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__day_since_last_order__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "day_since_last_order",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__hour_spend_on_app__histogram.png",
+      "caption": "Histogram of hour_spend_on_app across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "hour_spend_on_app",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__hour_spend_on_app__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "hour_spend_on_app",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__number_of_address__histogram.png",
+      "caption": "Histogram of number_of_address across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "number_of_address",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__number_of_address__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "number_of_address",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__number_of_device_registered__histogram.png",
+      "caption": "Histogram of number_of_device_registered across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "number_of_device_registered",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__number_of_device_registered__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "number_of_device_registered",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__coupon_used__histogram.png",
+      "caption": "Histogram of coupon_used across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "coupon_used",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__coupon_used__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "coupon_used",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__cashback_amount__histogram.png",
+      "caption": "Histogram of cashback_amount across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "cashback_amount",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__cashback_amount__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "cashback_amount",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__order_amount_hike_from_last_year__histogram.png",
+      "caption": "Histogram of order_amount_hike_from_last_year across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "order_amount_hike_from_last_year",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__order_amount_hike_from_last_year__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "order_amount_hike_from_last_year",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__warehouse_to_home__histogram.png",
+      "caption": "Histogram of warehouse_to_home across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "warehouse_to_home",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__warehouse_to_home__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "warehouse_to_home",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__satisfaction_score__histogram.png",
+      "caption": "Histogram of satisfaction_score across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed.",
+      "feature": "satisfaction_score",
+      "plot_type": "histogram",
+      "context": "numeric"
+    },
+    {
+      "path": "figures/num__satisfaction_score__boxplot_churn.png",
+      "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups.",
+      "feature": "satisfaction_score",
+      "plot_type": "boxplot_by_churn",
+      "context": "numeric"
+    }
+  ]
+}

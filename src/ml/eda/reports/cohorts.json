@@ -1,0 +1,128 @@
+{
+  "overall_churn_rate": 0.16838365896980462,
+  "hotspot_lift": 2.0,
+  "cohorts": [
+    {
+      "name": "tenure_bucket",
+      "feature": "tenure_months",
+      "type": "numeric_bucket",
+      "purpose": "Feeds the ordinal `tenure_segment` feature in Stage 3.2.",
+      "buckets": {
+        "new (0\u20136mo)": {
+          "count": 2150,
+          "churned": 697,
+          "retained": 1453,
+          "churn_rate": 0.3241860465116279,
+          "lift": 1.93
+        },
+        "growing (6\u201324mo)": {
+          "count": 3051,
+          "churned": 251,
+          "retained": 2800,
+          "churn_rate": 0.08226810881678139,
+          "lift": 0.49
+        },
+        "loyal (24+mo)": {
+          "count": 429,
+          "churned": 0,
+          "retained": 429,
+          "churn_rate": 0.0,
+          "lift": 0.0
+        }
+      },
+      "hotspots": [],
+      "plot": {
+        "path": "figures/cohort__tenure_bucket.png",
+        "caption": "Churn rate per bucket of tenure_months. Orange dashed = overall rate (16.8%). Red dotted = 2.0\u00d7 hotspot threshold. Red bars have cleared the hotspot line \u2014 candidate segments for a binary flag in Stage 3.2."
+      }
+    },
+    {
+      "name": "city_tier",
+      "feature": "city_tier",
+      "type": "categorical",
+      "purpose": "Tier-1/2/3 cities often have different churn dynamics.",
+      "buckets": {
+        "1": {
+          "count": 3666,
+          "churned": 532,
+          "retained": 3134,
+          "churn_rate": 0.14511729405346427,
+          "lift": 0.86
+        },
+        "2": {
+          "count": 242,
+          "churned": 48,
+          "retained": 194,
+          "churn_rate": 0.19834710743801653,
+          "lift": 1.18
+        },
+        "3": {
+          "count": 1722,
+          "churned": 368,
+          "retained": 1354,
+          "churn_rate": 0.21370499419279906,
+          "lift": 1.27
+        }
+      },
+      "hotspots": [],
+      "plot": {
+        "path": "figures/cohort__city_tier.png",
+        "caption": "Churn rate per bucket of city_tier. Orange dashed = overall rate (16.8%). Red dotted = 2.0\u00d7 hotspot threshold. Red bars have cleared the hotspot line \u2014 candidate segments for a binary flag in Stage 3.2."
+      }
+    },
+    {
+      "name": "preferred_payment_mode",
+      "feature": "preferred_payment_mode",
+      "type": "categorical",
+      "purpose": "COD users are a known higher-churn segment.",
+      "buckets": {
+        "COD": {
+          "count": 514,
+          "churned": 128,
+          "retained": 386,
+          "churn_rate": 0.2490272373540856,
+          "lift": 1.48
+        },
+        "Credit Card": {
+          "count": 1774,
+          "churned": 252,
+          "retained": 1522,
+          "churn_rate": 0.14205186020293123,
+          "lift": 0.84
+        },
+        "Debit Card": {
+          "count": 2314,
+          "churned": 356,
+          "retained": 1958,
+          "churn_rate": 0.15384615384615385,
+          "lift": 0.91
+        },
+        "E wallet": {
+          "count": 614,
+          "churned": 140,
+          "retained": 474,
+          "churn_rate": 0.2280130293159609,
+          "lift": 1.35
+        },
+        "UPI": {
+          "count": 414,
+          "churned": 72,
+          "retained": 342,
+          "churn_rate": 0.17391304347826086,
+          "lift": 1.03
+        }
+      },
+      "hotspots": [],
+      "plot": {
+        "path": "figures/cohort__preferred_payment_mode.png",
+        "caption": "Churn rate per bucket of preferred_payment_mode. Orange dashed = overall rate (16.8%). Red dotted = 2.0\u00d7 hotspot threshold. Red bars have cleared the hotspot line \u2014 candidate segments for a binary flag in Stage 3.2."
+      }
+    }
+  ],
+  "all_hotspots": [],
+  "narrative": "Analysed 3 cohort definition(s). No buckets cleared the hotspot threshold \u2014 churn is distributed fairly evenly across the analysed cohorts.",
+  "recommendation": {
+    "flag_candidates": [],
+    "rationale": "No cohort hotspots identified. No cohort-derived binary flags recommended for Stage 3.2."
+  }
+}

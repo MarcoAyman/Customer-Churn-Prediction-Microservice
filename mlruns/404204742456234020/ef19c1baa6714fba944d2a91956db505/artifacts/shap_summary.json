@@ -1,0 +1,241 @@
+{
+  "version": "v1.1.0",
+  "n_samples": 500,
+  "feature_importance": [
+    {
+      "feature": "address_per_tenure_ratio",
+      "mean_abs_shap": 0.7595468522660836,
+      "rank": 1,
+      "importance_pct": 14.158704199803458
+    },
+    {
+      "feature": "tenure_months",
+      "mean_abs_shap": 0.5987320298984837,
+      "rank": 2,
+      "importance_pct": 11.160956932398376
+    },
+    {
+      "feature": "complain_risk",
+      "mean_abs_shap": 0.42168216247459406,
+      "rank": 3,
+      "importance_pct": 7.860572375487469
+    },
+    {
+      "feature": "order_cat_risk",
+      "mean_abs_shap": 0.32347628550427954,
+      "rank": 4,
+      "importance_pct": 6.029917744299732
+    },
+    {
+      "feature": "cashback_amount",
+      "mean_abs_shap": 0.3161879967455201,
+      "rank": 5,
+      "importance_pct": 5.894056836772889
+    },
+    {
+      "feature": "city_tier",
+      "mean_abs_shap": 0.2945344818845858,
+      "rank": 6,
+      "importance_pct": 5.4904139135123575
+    },
+    {
+      "feature": "warehouse_to_home",
+      "mean_abs_shap": 0.28801039686956603,
+      "rank": 7,
+      "importance_pct": 5.368798519246099
+    },
+    {
+      "feature": "marital_risk",
+      "mean_abs_shap": 0.25975624583627793,
+      "rank": 8,
+      "importance_pct": 4.842113212469585
+    },
+    {
+      "feature": "recency_risk_score",
+      "mean_abs_shap": 0.24108285783815536,
+      "rank": 9,
+      "importance_pct": 4.494022800028568
+    },
+    {
+      "feature": "satisfaction_score",
+      "mean_abs_shap": 0.22970259822307493,
+      "rank": 10,
+      "importance_pct": 4.281883510495384
+    },
+    {
+      "feature": "order_frequency_normalized",
+      "mean_abs_shap": 0.1926436807630313,
+      "rank": 11,
+      "importance_pct": 3.5910686532996166
+    },
+    {
+      "feature": "number_of_device_registered",
+      "mean_abs_shap": 0.17327935742744402,
+      "rank": 12,
+      "importance_pct": 3.2300985231227313
+    },
+    {
+      "feature": "platform_embeddedness_score",
+      "mean_abs_shap": 0.14349100465510037,
+      "rank": 13,
+      "importance_pct": 2.6748141792475795
+    },
+    {
+      "feature": "day_since_last_order",
+      "mean_abs_shap": 0.12150663531322226,
+      "rank": 14,
+      "importance_pct": 2.265003801385812
+    },
+    {
+      "feature": "preferred_payment_mode_Credit Card",
+      "mean_abs_shap": 0.09724608466926848,
+      "rank": 15,
+      "importance_pct": 1.8127631538638354
+    },
+    {
+      "feature": "order_amount_hike_from_last_year",
+      "mean_abs_shap": 0.09419406809045726,
+      "rank": 16,
+      "importance_pct": 1.7558705476692853
+    },
+    {
+      "feature": "silent_dissatisfaction_flag",
+      "mean_abs_shap": 0.09261723684902724,
+      "rank": 17,
+      "importance_pct": 1.7264768545036724
+    },
+    {
+      "feature": "discount_dependency_ratio",
+      "mean_abs_shap": 0.08744129340303465,
+      "rank": 18,
+      "importance_pct": 1.6299921518311802
+    },
+    {
+      "feature": "cashback_per_order",
+      "mean_abs_shap": 0.08471057131828466,
+      "rank": 19,
+      "importance_pct": 1.5790887926315542
+    },
+    {
+      "feature": "preferred_payment_mode_Debit Card",
+      "mean_abs_shap": 0.08337303801060181,
+      "rank": 20,
+      "importance_pct": 1.5541558495163716
+    },
+    {
+      "feature": "gender_Female",
+      "mean_abs_shap": 0.07718475424096097,
+      "rank": 21,
+      "importance_pct": 1.4388001224306972
+    },
+    {
+      "feature": "number_of_address",
+      "mean_abs_shap": 0.06240153389786831,
+      "rank": 22,
+      "importance_pct": 1.1632262808251497
+    },
+    {
+      "feature": "preferred_login_device_Computer",
+      "mean_abs_shap": 0.05530588488300755,
+      "rank": 23,
+      "importance_pct": 1.0309563685645622
+    },
+    {
+      "feature": "coupon_used",
+      "mean_abs_shap": 0.05418053063836958,
+      "rank": 24,
+      "importance_pct": 1.00997865294072
+    },
+    {
+      "feature": "is_cod_user",
+      "mean_abs_shap": 0.051012543626414726,
+      "rank": 25,
+      "importance_pct": 0.9509242432262097
+    },
+    {
+      "feature": "preferred_payment_mode_UPI",
+      "mean_abs_shap": 0.03780304693885962,
+      "rank": 26,
+      "importance_pct": 0.7046861663131395
+    },
+    {
+      "feature": "order_count",
+      "mean_abs_shap": 0.035221295253398475,
+      "rank": 27,
+      "importance_pct": 0.6565597626255593
+    },
+    {
+      "feature": "preferred_payment_mode_E wallet",
+      "mean_abs_shap": 0.03438803143723574,
+      "rank": 28,
+      "importance_pct": 0.6410269013435346
+    },
+    {
+      "feature": "complaint_satisfaction_interaction",
+      "mean_abs_shap": 0.03087670913905971,
+      "rank": 29,
+      "importance_pct": 0.5755723824791313
+    },
+    {
+      "feature": "hour_spend_on_app",
+      "mean_abs_shap": 0.017597265352196034,
+      "rank": 30,
+      "importance_pct": 0.328030422486578
+    },
+    {
+      "feature": "preferred_login_device_Mobile Phone",
+      "mean_abs_shap": 0.0020987253258744768,
+      "rank": 31,
+      "importance_pct": 0.0391223148342178
+    },
+    {
+      "feature": "is_new_customer",
+      "mean_abs_shap": 0.0018119736074529397,
+      "rank": 32,
+      "importance_pct": 0.03377697932554852
+    },
+    {
+      "feature": "warehouse_distance_risk",
+      "mean_abs_shap": 0.0006259446627668355,
+      "rank": 33,
+      "importance_pct": 0.011668227310955438
+    },
+    {
+      "feature": "gender_Male",
+      "mean_abs_shap": 0.0004728276732841416,
+      "rank": 34,
+      "importance_pct": 0.008813975258456102
+    },
+    {
+      "feature": "tenure_segment",
+      "mean_abs_shap": 0.0003264123264476554,
+      "rank": 35,
+      "importance_pct": 0.006084648449998461
+    },
+    {
+      "feature": "order_value_declining_flag",
+      "mean_abs_shap": 0.0,
+      "rank": 36,
+      "importance_pct": 0.0
+    },
+    {
+      "feature": "app_engagement_tier",
+      "mean_abs_shap": 0.0,
+      "rank": 37,
+      "importance_pct": 0.0
+    },
+    {
+      "feature": "preferred_payment_mode_COD",
+      "mean_abs_shap": 0.0,
+      "rank": 38,
+      "importance_pct": 0.0
+    }
+  ],
+  "top3_features": [
+    "address_per_tenure_ratio",
+    "tenure_months",
+    "complain_risk"
+  ],
+  "dominance_warning": false,
+  "top1_importance_pct": 14.158704199803458
+}

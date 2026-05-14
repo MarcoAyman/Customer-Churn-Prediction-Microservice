@@ -1,0 +1,8 @@
+artifact_location: /home/marco-hanna/Desktop/Customer-Churn-Prediction-Microservice/mlruns/404204742456234020
+creation_time: 1778625880907
+experiment_id: '404204742456234020'
+last_update_time: 1778625880907
+lifecycle_stage: active
+name: churnguard-churn-prediction
+trace_location: null
+workspace: default

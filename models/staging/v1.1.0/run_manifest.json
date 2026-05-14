@@ -1,0 +1,37 @@
+{
+  "version": "v1.1.0",
+  "algorithm": "LightGBM",
+  "trained_at": "2026-05-12T22:58:30.265169+00:00",
+  "git_sha": "00c1144e646022dd916558d83ee5a76f31d7253d",
+  "data": {
+    "X_train_shape": [
+      3940,
+      38
+    ],
+    "X_train_hash": "85236f63b25a6bf4",
+    "source": "data/splits/X_train.npy"
+  },
+  "hyperparameters": {
+    "max_depth": 6,
+    "learning_rate": 0.028869220380495747,
+    "n_estimators": 308,
+    "num_leaves": 64,
+    "subsample": 0.6739417822102108,
+    "colsample_bytree": 0.9878338511058234,
+    "min_child_samples": 41,
+    "reg_alpha": 0.5727904470799616,
+    "reg_lambda": 0.3795853142670636,
+    "scale_pos_weight": 4.933734939759036,
+    "random_state": 42,
+    "eval_metric": "logloss"
+  },
+  "environment": {
+    "python": "3.11.14",
+    "lightgbm": "4.6.0"
+  },
+  "seeds": {
+    "optuna": 42,
+    "random_state": 42,
+    "cv_folds": 5
+  }
+}

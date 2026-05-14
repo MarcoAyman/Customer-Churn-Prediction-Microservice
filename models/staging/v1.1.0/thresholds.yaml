@@ -1,0 +1,10 @@
+decision_threshold: 0.20995013211372562
+recall_at_threshold: 0.9647887323943662
+risk_tiers:
+  HIGH: '>= 0.260'
+  LOW: < 0.060
+  MEDIUM: '>= 0.060 and < 0.260'
+selection_criteria:
+  precision_floor: 0.6
+  recall_target: 0.8
+version: v1.1.0

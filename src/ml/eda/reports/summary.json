@@ -1,0 +1,280 @@
+{
+  "generated_at": "2026-05-05T15:02:48.121100+00:00",
+  "elapsed_seconds": 2.95,
+  "status": "pass",
+  "model_version": "kaggle_baseline",
+  "dataset": {
+    "rows": 5630,
+    "columns": 19,
+    "categorical_cols": [
+      "gender",
+      "city_tier",
+      "marital_status",
+      "preferred_payment_mode",
+      "preferred_login_device",
+      "preferred_order_cat",
+      "complain"
+    ],
+    "numeric_cols": [
+      "tenure_months",
+      "order_count",
+      "day_since_last_order",
+      "hour_spend_on_app",
+      "number_of_address",
+      "number_of_device_registered",
+      "coupon_used",
+      "cashback_amount",
+      "order_amount_hike_from_last_year",
+      "warehouse_to_home",
+      "satisfaction_score"
+    ],
+    "target_col": "churn"
+  },
+  "counts": {
+    "features": 18,
+    "categorical": 7,
+    "numeric": 11,
+    "hotspot_cohorts": 0,
+    "strong_pairs": 0,
+    "high_vif": 0,
+    "figures": 41
+  },
+  "sanity": {
+    "status": "pass",
+    "warnings": []
+  },
+  "class_balance": {
+    "churn_rate": 0.16838365896980462,
+    "imbalance_ratio": 4.938818565400844,
+    "imbalance_severity": "moderate",
+    "strategy_label": "algorithmic_weights"
+  },
+  "features": [
+    {
+      "name": "gender",
+      "type": "categorical",
+      "n_categories": 2,
+      "cramers_v": 0.028778903905673597,
+      "p_value": 0.030820940334890086,
+      "action": "keep_one_hot",
+      "hotspot_categories": []
+    },
+    {
+      "name": "city_tier",
+      "type": "categorical",
+      "n_categories": 3,
+      "cramers_v": 0.08531875687625065,
+      "p_value": 1.2612000812079956e-09,
+      "action": "keep_one_hot",
+      "hotspot_categories": []
+    },
+    {
+      "name": "marital_status",
+      "type": "categorical",
+      "n_categories": 3,
+      "cramers_v": 0.1830620931826161,
+      "p_value": 1.073011277910542e-41,
+      "action": "keep_one_hot",
+      "hotspot_categories": [
+        "Single"
+      ]
+    },
+    {
+      "name": "preferred_payment_mode",
+      "type": "categorical",
+      "n_categories": 5,
+      "cramers_v": 0.09594714329533893,
+      "p_value": 1.4978570960706217e-10,
+      "action": "keep_one_hot",
+      "hotspot_categories": []
+    },
+    {
+      "name": "preferred_login_device",
+      "type": "categorical",
+      "n_categories": 2,
+      "cramers_v": 0.05057616989336401,
+      "p_value": 0.00014770402399479684,
+      "action": "keep_one_hot",
+      "hotspot_categories": []
+    },
+    {
+      "name": "preferred_order_cat",
+      "type": "categorical",
+      "n_categories": 5,
+      "cramers_v": 0.22640827733718627,
+      "p_value": 3.119243404287749e-61,
+      "action": "keep_one_hot",
+      "hotspot_categories": [
+        "Mobile"
+      ]
+    },
+    {
+      "name": "complain",
+      "type": "categorical",
+      "n_categories": 2,
+      "cramers_v": 0.24966245605686588,
+      "p_value": 2.6644609654641377e-78,
+      "action": "keep_one_hot",
+      "hotspot_categories": [
+        "1"
+      ]
+    },
+    {
+      "name": "tenure_months",
+      "type": "numeric",
+      "cohens_d": -0.9590154193240189,
+      "p_value": 1.3097213567891966e-181,
+      "signal_strength": "strong",
+      "transform": "none",
+      "action": "keep"
+    },
+    {
+      "name": "order_count",
+      "type": "numeric",
+      "cohens_d": -0.06424312499111684,
+      "p_value": 0.03050037481644772,
+      "signal_strength": "negligible",
+      "transform": "log1p",
+      "action": "keep_low_priority"
+    },
+    {
+      "name": "day_since_last_order",
+      "type": "numeric",
+      "cohens_d": -0.4216162489354482,
+      "p_value": 1.0705551696225017e-41,
+      "signal_strength": "weak",
+      "transform": "none",
+      "action": "keep"
+    },
+    {
+      "name": "hour_spend_on_app",
+      "type": "numeric",
+      "cohens_d": 0.050281754430674404,
+      "p_value": 0.20945943456720229,
+      "signal_strength": "negligible",
+      "transform": "none",
+      "action": "keep_low_priority"
+    },
+    {
+      "name": "number_of_address",
+      "type": "numeric",
+      "cohens_d": 0.11749032209244314,
+      "p_value": 0.03049724563723119,
+      "signal_strength": "negligible",
+      "transform": "none",
+      "action": "keep_low_priority"
+    },
+    {
+      "name": "number_of_device_registered",
+      "type": "numeric",
+      "cohens_d": 0.29008996779840834,
+      "p_value": 3.0541891238508676e-14,
+      "signal_strength": "weak",
+      "transform": "none",
+      "action": "keep"
+    },
+    {
+      "name": "coupon_used",
+      "type": "numeric",
+      "cohens_d": 0.01983886967288302,
+      "p_value": 0.44912884863515357,
+      "signal_strength": "negligible",
+      "transform": "log1p",
+      "action": "keep_low_priority"
+    },
+    {
+      "name": "cashback_amount",
+      "type": "numeric",
+      "cohens_d": -0.4167592899448218,
+      "p_value": 2.518463732518876e-38,
+      "signal_strength": "weak",
+      "transform": "log1p (optional)",
+      "action": "keep"
+    },
+    {
+      "name": "order_amount_hike_from_last_year",
+      "type": "numeric",
+      "cohens_d": -0.01890357254145189,
+      "p_value": 0.1043907990290318,
+      "signal_strength": "negligible",
+      "transform": "none",
+      "action": "keep_low_priority"
+    },
+    {
+      "name": "warehouse_to_home",
+      "type": "numeric",
+      "cohens_d": 0.1862610316122834,
+      "p_value": 2.040863948002307e-09,
+      "signal_strength": "negligible",
+      "transform": "log1p",
+      "action": "keep_low_priority"
+    },
+    {
+      "name": "satisfaction_score",
+      "type": "numeric",
+      "cohens_d": 0.28341040652572924,
+      "p_value": 3.752038636946386e-15,
+      "signal_strength": "weak",
+      "transform": "none",
+      "action": "keep"
+    }
+  ],
+  "top_predictors": {
+    "numeric": [
+      {
+        "name": "tenure_months",
+        "type": "numeric",
+        "cohens_d": -0.9590154193240189,
+        "p_value": 1.3097213567891966e-181,
+        "signal_strength": "strong",
+        "transform": "none",
+        "action": "keep"
+      }
+    ],
+    "categorical": [
+      {
+        "name": "complain",
+        "type": "categorical",
+        "n_categories": 2,
+        "cramers_v": 0.24966245605686588,
+        "p_value": 2.6644609654641377e-78,
+        "action": "keep_one_hot",
+        "hotspot_categories": [
+          "1"
+        ]
+      },
+      {
+        "name": "preferred_order_cat",
+        "type": "categorical",
+        "n_categories": 5,
+        "cramers_v": 0.22640827733718627,
+        "p_value": 3.119243404287749e-61,
+        "action": "keep_one_hot",
+        "hotspot_categories": [
+          "Mobile"
+        ]
+      },
+      {
+        "name": "marital_status",
+        "type": "categorical",
+        "n_categories": 3,
+        "cramers_v": 0.1830620931826161,
+        "p_value": 1.073011277910542e-41,
+        "action": "keep_one_hot",
+        "hotspot_categories": [
+          "Single"
+        ]
+      }
+    ]
+  },
+  "multicollinearity": {
+    "strong_pairs": [],
+    "drop_candidates": []
+  },
+  "cohort_hotspots": [],
+  "narratives": {
+    "class_balance": "Dataset holds 5,630 customers: 4,682 retained and 948 churned (16.84% churn rate). Imbalance ratio = 4.94:1. Severity: moderate.",
+    "correlation": "No pair exceeds |r| = 0.85. Features look pairwise-independent. All VIF scores below 10.0 \u2014 highest is order_count at 1.90. No multicollinearity concerns.",
+    "cohorts": "Analysed 3 cohort definition(s). No buckets cleared the hotspot threshold \u2014 churn is distributed fairly evenly across the analysed cohorts."
+  }
+}

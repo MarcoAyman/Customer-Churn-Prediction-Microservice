@@ -1,0 +1,70 @@
+{
+  "type": "categorical",
+  "n_categories": 2,
+  "distribution": [
+    {
+      "category": "0",
+      "count": 4026,
+      "pct": 0.7150976909413854
+    },
+    {
+      "category": "1",
+      "count": 1604,
+      "pct": 0.2849023090586146
+    }
+  ],
+  "distribution_plot": {
+    "path": "figures/cat__complain__distribution.png",
+    "caption": "Distribution of 2 categories across 5,630 customers. Pie chart chosen for readability at this category count."
+  },
+  "per_category_churn": {
+    "0": {
+      "count": 4026,
+      "churned": 440,
+      "retained": 3586,
+      "churn_rate": 0.1092896174863388
+    },
+    "1": {
+      "count": 1604,
+      "churned": 508,
+      "retained": 1096,
+      "churn_rate": 0.3167082294264339
+    }
+  },
+  "stacked_churn_plot": {
+    "path": "figures/cat__complain__churn_stacked.png",
+    "caption": "Each bar spans 100% of customers inside that category. Red = churn rate. Orange dashed line = overall retention baseline \u2014 any category whose red segment extends PAST this line churns more than average (a hotspot)."
+  },
+  "overall_churn_rate": 0.16838365896980462,
+  "statistical_tests": {
+    "chi_squared": {
+      "statistic": 350.92545525927073,
+      "p_value": 2.6644609654641377e-78,
+      "dof": 1,
+      "reliable": true,
+      "narration": "\u03c7\u00b2 = 350.93 on 1 df. Highly significant (p < 0.0001). Tests whether the category proportions differ between churn and retained."
+    },
+    "cramers_v": {
+      "value": 0.24966245605686588,
+      "narration": "Cram\u00e9r's V = 0.250 \u2014 moderate association with churn."
+    }
+  },
+  "narrative": {
+    "distribution": "'complain' has 2 category/ies across 5,630 customers. Most common: '0' (71.5%). Least common: '1' (28.5%).",
+    "churn_rates": "Overall churn rate = 16.8%. Highest-churn category: '1' at 31.7% (1.88\u00d7 the baseline). Lowest-churn category: '0' at 10.9% (0.65\u00d7 the baseline). Hotspot categories (churn rate > 1.5\u00d7 baseline): 1. Strong candidates for a binary flag feature in Stage 3.2.",
+    "association": "\u03c7\u00b2 = 350.93 on 1 df. Highly significant (p < 0.0001). Tests whether the category proportions differ between churn and retained. Cram\u00e9r's V = 0.250 \u2014 moderate association with churn."
+  },
+  "recommendation": {
+    "action": "keep_one_hot",
+    "rationale": "Moderate association (Cram\u00e9r's V = 0.250). One-hot is sufficient; tree models will pick up the interactions.",
+    "engineering_ideas": [
+      "Create binary flag(s) for hotspot categories: 1."
+    ],
+    "hotspot_categories": [
+      "1"
+    ],
+    "hotspot_lift_used": 1.5
+  },
+  "feature_name": "complain",
+  "analyzer": "CategoricalAnalyzer"
+}

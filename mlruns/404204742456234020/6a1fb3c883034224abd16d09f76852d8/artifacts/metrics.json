@@ -1,0 +1,45 @@
+{
+  "version": "v1.1.0",
+  "algorithm": "LGBMClassifier",
+  "threshold": 0.20995013211372562,
+  "val": {
+    "set": "val",
+    "n_samples": 845,
+    "n_churned": 142,
+    "auc_roc": 0.9742652214853846,
+    "pr_auc": 0.9213765873612187,
+    "brier_score": 0.04682581775592561,
+    "threshold": 0.20995013211372562,
+    "recall": 0.9647887323943662,
+    "precision": 0.6008771929824561,
+    "f1": 0.7405405405405405,
+    "true_positives": 137,
+    "false_positives": 91,
+    "true_negatives": 612,
+    "false_negatives": 5,
+    "business_cost_score": 116.0
+  },
+  "test": {
+    "set": "test",
+    "n_samples": 845,
+    "n_churned": 142,
+    "auc_roc": 0.9889808266383507,
+    "pr_auc": 0.9477050120968311,
+    "brier_score": 0.0421255279356148,
+    "threshold": 0.20995013211372562,
+    "recall": 0.9929577464788732,
+    "precision": 0.564,
+    "f1": 0.7193877551020408,
+    "true_positives": 141,
+    "false_positives": 109,
+    "true_negatives": 594,
+    "false_negatives": 1,
+    "business_cost_score": 114.0
+  },
+  "gates": {
+    "auc_roc_gte_0.85": true,
+    "recall_gte_0.80": true,
+    "precision_gte_0.60": false,
+    "overfit_gap_lt_0.05": true
+  }
+}

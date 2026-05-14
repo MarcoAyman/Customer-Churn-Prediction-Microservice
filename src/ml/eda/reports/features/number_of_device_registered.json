@@ -1,0 +1,77 @@
+{
+  "type": "numeric",
+  "summary_stats": {
+    "count": 5630,
+    "mean": 3.68898756660746,
+    "median": 4.0,
+    "std": 1.0239985188585423,
+    "min": 1.0,
+    "p1": 1.0,
+    "p5": 2.0,
+    "p25": 3.0,
+    "p75": 4.0,
+    "p95": 5.0,
+    "p99": 6.0,
+    "max": 6.0,
+    "skewness": -0.3969686434933112,
+    "kurtosis": 0.5828487315797424
+  },
+  "split_by_churn": {
+    "retained": {
+      "n": 4682,
+      "mean": 3.6392567278940624,
+      "median": 4.0,
+      "std": 1.0189095097529217
+    },
+    "churned": {
+      "n": 948,
+      "mean": 3.9345991561181433,
+      "median": 4.0,
+      "std": 1.0141267994920957
+    }
+  },
+  "histogram_plot": {
+    "path": "figures/num__number_of_device_registered__histogram.png",
+    "caption": "Histogram of number_of_device_registered across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed."
+  },
+  "boxplot": {
+    "path": "figures/num__number_of_device_registered__boxplot_churn.png",
+    "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups."
+  },
+  "statistical_tests": {
+    "mann_whitney_u": {
+      "statistic": 1891637.0,
+      "p_value": 3.0541891238508676e-14,
+      "narration": "Mann-Whitney U = 1,891,637. Highly significant (p < 0.0001). This non-parametric test asks whether churn and retained customers have the same distribution for this feature."
+    },
+    "cohens_d": {
+      "value": 0.29008996779840834,
+      "narration": "Cohen's d = +0.29 \u2014 small effect size. Values are higher in churners (positive shift)."
+    }
+  },
+  "outliers": {
+    "method": "IQR (1.5 \u00d7 IQR fence)",
+    "iqr_lower_bound": 1.5,
+    "iqr_upper_bound": 5.5,
+    "outlier_count": 397,
+    "outlier_pct": 7.051509769094139,
+    "narration": "397 outliers by the IQR rule (7.1% of rows). p99 = 6.00, max = 6.00. Severity: substantial. The long tail is material. Recommended: log1p transform, OR cap at the 99th percentile inside the preprocessing pipeline. Decision deferred to Stage 3.2 (different treatment per model family may be appropriate)."
+  },
+  "narrative": {
+    "distribution": "Distribution is approximately symmetric (skewness = -0.40). Mean (3.69) < median (4.00) \u2014 confirms the left skew.",
+    "boxplot": "Churned median (4.00) is 0.00 lower than retained median (4.00). A weak separator \u2014 some shift but substantial overlap between groups.",
+    "separation": "Mann-Whitney U = 1,891,637. Highly significant (p < 0.0001). This non-parametric test asks whether churn and retained customers have the same distribution for this feature. Cohen's d = +0.29 \u2014 small effect size. Values are higher in churners (positive shift).",
+    "outliers": "397 outliers by the IQR rule (7.1% of rows). p99 = 6.00, max = 6.00. Severity: substantial. The long tail is material. Recommended: log1p transform, OR cap at the 99th percentile inside the preprocessing pipeline. Decision deferred to Stage 3.2 (different treatment per model family may be appropriate)."
+  },
+  "recommendation": {
+    "action": "keep",
+    "signal_strength": "weak",
+    "transform": "none",
+    "transform_reason": "distribution close to symmetric OR outlier mass minimal",
+    "outlier_action": "consider p99 cap or log transform in Stage 3.2",
+    "rationale": "Signal: weak (|Cohen's d| = 0.29, p = 3.054e-14). Transform: none \u2014 distribution close to symmetric OR outlier mass minimal. Outlier handling: consider p99 cap or log transform in Stage 3.2.",
+    "engineering_ideas": []
+  },
+  "feature_name": "number_of_device_registered",
+  "analyzer": "NumericAnalyzer"
+}

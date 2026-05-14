@@ -1,0 +1,20 @@
+{
+  "random_state": 42,
+  "train": {
+    "rows": 3940,
+    "churned": 664,
+    "churn_rate": 0.16852791878172588
+  },
+  "val": {
+    "rows": 845,
+    "churned": 142,
+    "churn_rate": 0.1680473372781065
+  },
+  "test": {
+    "rows": 845,
+    "churned": 142,
+    "churn_rate": 0.1680473372781065
+  },
+  "total": 5630,
+  "note": "Test set is LOCKED \u2014 only touched once at final evaluation. Val set used only for threshold selection after training. Preprocessor fitted on train only."
+}

@@ -1,0 +1,77 @@
+{
+  "type": "numeric",
+  "summary_stats": {
+    "count": 5630,
+    "mean": 177.22303019538188,
+    "median": 163.28,
+    "std": 49.20703617486403,
+    "min": 0.0,
+    "p1": 116.01,
+    "p5": 123.03349999999999,
+    "p25": 145.77,
+    "p75": 196.3925,
+    "p95": 291.93850000000003,
+    "p99": 318.7431,
+    "max": 324.99,
+    "skewness": 1.1498457194574931,
+    "kurtosis": 0.9745052176823097
+  },
+  "split_by_churn": {
+    "retained": {
+      "n": 4682,
+      "mean": 180.63520290474156,
+      "median": 166.115,
+      "std": 50.43479076295424
+    },
+    "churned": {
+      "n": 948,
+      "mean": 160.3709282700422,
+      "median": 149.66,
+      "std": 38.43605497788585
+    }
+  },
+  "histogram_plot": {
+    "path": "figures/num__cashback_amount__histogram.png",
+    "caption": "Histogram of cashback_amount across 5,630 customers. Orange = mean, purple = median. The gap between them confirms skew direction: mean > median \u21d2 right-skewed, mean < median \u21d2 left-skewed."
+  },
+  "boxplot": {
+    "path": "figures/num__cashback_amount__boxplot_churn.png",
+    "caption": "Box plot reads as: box = 25th\u201375th percentile (the middle 50%), line inside box = median, whiskers extend to 1.5 \u00d7 IQR, dots beyond = outliers. Large vertical separation between the two medians = strong churn predictor. Box overlap that is still high means the feature alone does NOT distinguish the two groups."
+  },
+  "statistical_tests": {
+    "mann_whitney_u": {
+      "statistic": 2810031.0,
+      "p_value": 2.518463732518876e-38,
+      "narration": "Mann-Whitney U = 2,810,031. Highly significant (p < 0.0001). This non-parametric test asks whether churn and retained customers have the same distribution for this feature."
+    },
+    "cohens_d": {
+      "value": -0.4167592899448218,
+      "narration": "Cohen's d = -0.42 \u2014 small effect size. Values are higher in retained customers (negative shift)."
+    }
+  },
+  "outliers": {
+    "method": "IQR (1.5 \u00d7 IQR fence)",
+    "iqr_lower_bound": 69.83625,
+    "iqr_upper_bound": 272.32625,
+    "outlier_count": 438,
+    "outlier_pct": 7.779751332149202,
+    "narration": "438 outliers by the IQR rule (7.8% of rows). p99 = 318.74, max = 324.99. Severity: substantial. The long tail is material. Recommended: log1p transform, OR cap at the 99th percentile inside the preprocessing pipeline. Decision deferred to Stage 3.2 (different treatment per model family may be appropriate)."
+  },
+  "narrative": {
+    "distribution": "Distribution is strongly right-skewed \u2014 most values clustered on the low end with a long right-side tail (skewness = +1.15). Mean (177.22) > median (163.28) \u2014 confirms the right skew.",
+    "boxplot": "Churned median (149.66) is 16.46 lower than retained median (166.12). A weak separator \u2014 some shift but substantial overlap between groups.",
+    "separation": "Mann-Whitney U = 2,810,031. Highly significant (p < 0.0001). This non-parametric test asks whether churn and retained customers have the same distribution for this feature. Cohen's d = -0.42 \u2014 small effect size. Values are higher in retained customers (negative shift).",
+    "outliers": "438 outliers by the IQR rule (7.8% of rows). p99 = 318.74, max = 324.99. Severity: substantial. The long tail is material. Recommended: log1p transform, OR cap at the 99th percentile inside the preprocessing pipeline. Decision deferred to Stage 3.2 (different treatment per model family may be appropriate)."
+  },
+  "recommendation": {
+    "action": "keep",
+    "signal_strength": "weak",
+    "transform": "log1p (optional)",
+    "transform_reason": "moderate skew combined with substantial outlier tail",
+    "outlier_action": "consider p99 cap or log transform in Stage 3.2",
+    "rationale": "Signal: weak (|Cohen's d| = 0.42, p = 2.518e-38). Transform: log1p (optional) \u2014 moderate skew combined with substantial outlier tail. Outlier handling: consider p99 cap or log transform in Stage 3.2.",
+    "engineering_ideas": []
+  },
+  "feature_name": "cashback_amount",
+  "analyzer": "NumericAnalyzer"
+}

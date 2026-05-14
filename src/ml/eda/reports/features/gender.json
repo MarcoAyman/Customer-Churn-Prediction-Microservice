@@ -1,0 +1,66 @@
+{
+  "type": "categorical",
+  "n_categories": 2,
+  "distribution": [
+    {
+      "category": "Male",
+      "count": 3384,
+      "pct": 0.6010657193605684
+    },
+    {
+      "category": "Female",
+      "count": 2246,
+      "pct": 0.3989342806394316
+    }
+  ],
+  "distribution_plot": {
+    "path": "figures/cat__gender__distribution.png",
+    "caption": "Distribution of 2 categories across 5,630 customers. Pie chart chosen for readability at this category count."
+  },
+  "per_category_churn": {
+    "Female": {
+      "count": 2246,
+      "churned": 348,
+      "retained": 1898,
+      "churn_rate": 0.1549421193232413
+    },
+    "Male": {
+      "count": 3384,
+      "churned": 600,
+      "retained": 2784,
+      "churn_rate": 0.1773049645390071
+    }
+  },
+  "stacked_churn_plot": {
+    "path": "figures/cat__gender__churn_stacked.png",
+    "caption": "Each bar spans 100% of customers inside that category. Red = churn rate. Orange dashed line = overall retention baseline \u2014 any category whose red segment extends PAST this line churns more than average (a hotspot)."
+  },
+  "overall_churn_rate": 0.16838365896980462,
+  "statistical_tests": {
+    "chi_squared": {
+      "statistic": 4.662908495367532,
+      "p_value": 0.030820940334890086,
+      "dof": 1,
+      "reliable": true,
+      "narration": "\u03c7\u00b2 = 4.66 on 1 df. Marginally significant (p = 0.0308). Tests whether the category proportions differ between churn and retained."
+    },
+    "cramers_v": {
+      "value": 0.028778903905673597,
+      "narration": "Cram\u00e9r's V = 0.029 \u2014 weak association with churn."
+    }
+  },
+  "narrative": {
+    "distribution": "'gender' has 2 category/ies across 5,630 customers. Most common: 'Male' (60.1%). Least common: 'Female' (39.9%).",
+    "churn_rates": "Overall churn rate = 16.8%. Highest-churn category: 'Male' at 17.7% (1.05\u00d7 the baseline). Lowest-churn category: 'Female' at 15.5% (0.92\u00d7 the baseline).",
+    "association": "\u03c7\u00b2 = 4.66 on 1 df. Marginally significant (p = 0.0308). Tests whether the category proportions differ between churn and retained. Cram\u00e9r's V = 0.029 \u2014 weak association with churn."
+  },
+  "recommendation": {
+    "action": "keep_one_hot",
+    "rationale": "Weak association (Cram\u00e9r's V = 0.029). One-hot encode for completeness but deprioritise in feature selection.",
+    "engineering_ideas": [],
+    "hotspot_categories": [],
+    "hotspot_lift_used": 1.5
+  },
+  "feature_name": "gender",
+  "analyzer": "CategoricalAnalyzer"
+}

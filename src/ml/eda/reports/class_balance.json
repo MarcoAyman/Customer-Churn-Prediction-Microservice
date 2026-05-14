@@ -1,0 +1,24 @@
+{
+  "total": 5630,
+  "retained_count": 4682,
+  "churned_count": 948,
+  "retention_rate": 0.8316163410301953,
+  "churn_rate": 0.16838365896980462,
+  "imbalance_ratio": 4.938818565400844,
+  "imbalance_severity": "moderate",
+  "plot": {
+    "path": "figures/global__class_balance__donut.png",
+    "caption": "Donut chart of the churn label. The hollow ring shows the proportional split; the centre displays the total count and overall churn rate. Green = retained, red = churned."
+  },
+  "narrative": "Dataset holds 5,630 customers: 4,682 retained and 948 churned (16.84% churn rate). Imbalance ratio = 4.94:1. Severity: moderate.",
+  "recommendation": {
+    "strategy_label": "algorithmic_weights",
+    "severity": "moderate",
+    "rationale": "Ratio 4.94:1 is mildly imbalanced. Algorithmic class weights alone typically handle this well. Avoid resampling unless metrics disappoint.",
+    "stage_3_5_plan": [
+      "XGBoost / LightGBM: set scale_pos_weight = (n_retained / n_churned).",
+      "Logistic Regression / MLP: set class_weight='balanced'.",
+      "Compare against threshold tuning on a calibrated model."
+    ]
+  }
+}

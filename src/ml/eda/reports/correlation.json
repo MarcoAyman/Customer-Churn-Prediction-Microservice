@@ -1,0 +1,199 @@
+{
+  "features_analyzed": [
+    "tenure_months",
+    "order_count",
+    "day_since_last_order",
+    "hour_spend_on_app",
+    "number_of_address",
+    "number_of_device_registered",
+    "coupon_used",
+    "cashback_amount",
+    "order_amount_hike_from_last_year",
+    "warehouse_to_home",
+    "satisfaction_score"
+  ],
+  "sample_size": 5630,
+  "correlation_matrix": {
+    "tenure_months": {
+      "tenure_months": 1.0,
+      "order_count": 0.1653,
+      "day_since_last_order": 0.1744,
+      "hour_spend_on_app": -0.0173,
+      "number_of_address": 0.2351,
+      "number_of_device_registered": -0.0207,
+      "coupon_used": 0.0723,
+      "cashback_amount": 0.468,
+      "order_amount_hike_from_last_year": -0.0055,
+      "warehouse_to_home": -0.0122,
+      "satisfaction_score": -0.0145
+    },
+    "order_count": {
+      "tenure_months": 0.1653,
+      "order_count": 1.0,
+      "day_since_last_order": 0.4216,
+      "hour_spend_on_app": 0.1021,
+      "number_of_address": -0.014,
+      "number_of_device_registered": 0.0998,
+      "coupon_used": 0.6155,
+      "cashback_amount": 0.3223,
+      "order_amount_hike_from_last_year": 0.0106,
+      "warehouse_to_home": 0.0004,
+      "satisfaction_score": 0.0182
+    },
+    "day_since_last_order": {
+      "tenure_months": 0.1744,
+      "order_count": 0.4216,
+      "day_since_last_order": 1.0,
+      "hour_spend_on_app": 0.0612,
+      "number_of_address": -0.0672,
+      "number_of_device_registered": 0.0074,
+      "coupon_used": 0.2789,
+      "cashback_amount": 0.3166,
+      "order_amount_hike_from_last_year": -0.0046,
+      "warehouse_to_home": 0.0203,
+      "satisfaction_score": 0.032
+    },
+    "hour_spend_on_app": {
+      "tenure_months": -0.0173,
+      "order_count": 0.1021,
+      "day_since_last_order": 0.0612,
+      "hour_spend_on_app": 1.0,
+      "number_of_address": 0.1395,
+      "number_of_device_registered": 0.305,
+      "coupon_used": 0.1931,
+      "cashback_amount": 0.1143,
+      "order_amount_hike_from_last_year": 0.0993,
+      "warehouse_to_home": 0.0641,
+      "satisfaction_score": 0.0309
+    },
+    "number_of_address": {
+      "tenure_months": 0.2351,
+      "order_count": -0.014,
+      "day_since_last_order": -0.0672,
+      "hour_spend_on_app": 0.1395,
+      "number_of_address": 1.0,
+      "number_of_device_registered": 0.085,
+      "coupon_used": 0.0311,
+      "cashback_amount": 0.1867,
+      "order_amount_hike_from_last_year": 0.0122,
+      "warehouse_to_home": -0.0083,
+      "satisfaction_score": 0.0536
+    },
+    "number_of_device_registered": {
+      "tenure_months": -0.0207,
+      "order_count": 0.0998,
+      "day_since_last_order": 0.0074,
+      "hour_spend_on_app": 0.305,
+      "number_of_address": 0.085,
+      "number_of_device_registered": 1.0,
+      "coupon_used": 0.1549,
+      "cashback_amount": 0.1372,
+      "order_amount_hike_from_last_year": 0.0657,
+      "warehouse_to_home": 0.023,
+      "satisfaction_score": -0.0172
+    },
+    "coupon_used": {
+      "tenure_months": 0.0723,
+      "order_count": 0.6155,
+      "day_since_last_order": 0.2789,
+      "hour_spend_on_app": 0.1931,
+      "number_of_address": 0.0311,
+      "number_of_device_registered": 0.1549,
+      "coupon_used": 1.0,
+      "cashback_amount": 0.1675,
+      "order_amount_hike_from_last_year": 0.026,
+      "warehouse_to_home": 0.0059,
+      "satisfaction_score": 0.0171
+    },
+    "cashback_amount": {
+      "tenure_months": 0.468,
+      "order_count": 0.3223,
+      "day_since_last_order": 0.3166,
+      "hour_spend_on_app": 0.1143,
+      "number_of_address": 0.1867,
+      "number_of_device_registered": 0.1372,
+      "coupon_used": 0.1675,
+      "cashback_amount": 1.0,
+      "order_amount_hike_from_last_year": -0.0096,
+      "warehouse_to_home": 0.0004,
+      "satisfaction_score": 0.0035
+    },
+    "order_amount_hike_from_last_year": {
+      "tenure_months": -0.0055,
+      "order_count": 0.0106,
+      "day_since_last_order": -0.0046,
+      "hour_spend_on_app": 0.0993,
+      "number_of_address": 0.0122,
+      "number_of_device_registered": 0.0657,
+      "coupon_used": 0.026,
+      "cashback_amount": -0.0096,
+      "order_amount_hike_from_last_year": 1.0,
+      "warehouse_to_home": 0.0383,
+      "satisfaction_score": -0.0271
+    },
+    "warehouse_to_home": {
+      "tenure_months": -0.0122,
+      "order_count": 0.0004,
+      "day_since_last_order": 0.0203,
+      "hour_spend_on_app": 0.0641,
+      "number_of_address": -0.0083,
+      "number_of_device_registered": 0.023,
+      "coupon_used": 0.0059,
+      "cashback_amount": 0.0004,
+      "order_amount_hike_from_last_year": 0.0383,
+      "warehouse_to_home": 1.0,
+      "satisfaction_score": 0.0075
+    },
+    "satisfaction_score": {
+      "tenure_months": -0.0145,
+      "order_count": 0.0182,
+      "day_since_last_order": 0.032,
+      "hour_spend_on_app": 0.0309,
+      "number_of_address": 0.0536,
+      "number_of_device_registered": -0.0172,
+      "coupon_used": 0.0171,
+      "cashback_amount": 0.0035,
+      "order_amount_hike_from_last_year": -0.0271,
+      "warehouse_to_home": 0.0075,
+      "satisfaction_score": 1.0
+    }
+  },
+  "heatmap_plot": {
+    "path": "figures/global__correlation__heatmap.png",
+    "caption": "Pearson correlation matrix across numeric features. Red = negative correlation, blue = positive correlation, neutral background = near-zero. Values inside the cells are the correlation coefficients. Pairs with |r| \u2265 0.85 are flagged as redundant and are candidates for dropping."
+  },
+  "strong_pairs": [],
+  "moderate_pairs": [
+    {
+      "feature_a": "order_count",
+      "feature_b": "coupon_used",
+      "pearson_r": 0.6155,
+      "abs_r": 0.6155,
+      "severity": "moderate"
+    }
+  ],
+  "vif_scores": {
+    "tenure_months": 1.3489958494558774,
+    "order_count": 1.9008353690566069,
+    "day_since_last_order": 1.3029614375707477,
+    "hour_spend_on_app": 1.1691035765973188,
+    "number_of_address": 1.1224372712946185,
+    "number_of_device_registered": 1.1409423154325118,
+    "coupon_used": 1.677824014623109,
+    "cashback_amount": 1.5024928589725157,
+    "order_amount_hike_from_last_year": 1.0141241631994737,
+    "warehouse_to_home": 1.006095498505809,
+    "satisfaction_score": 1.0077707743058637
+  },
+  "high_vif_features": [],
+  "narrative": "No pair exceeds |r| = 0.85. Features look pairwise-independent. All VIF scores below 10.0 \u2014 highest is order_count at 1.90. No multicollinearity concerns.",
+  "recommendation": {
+    "drop_candidates": [],
+    "rationale": "No drop candidates from correlation analysis. All numeric features carry independent signal and should be retained going into Stage 3.2."
+  },
+  "thresholds_used": {
+    "strong_correlation": 0.85,
+    "moderate_correlation": 0.5,
+    "high_vif": 10.0
+  }
+}

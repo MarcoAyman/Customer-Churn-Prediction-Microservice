@@ -1,0 +1,87 @@
+{
+  "generated_at": "2026-05-09T22:17:33.988874+00:00",
+  "encoding_decisions": {
+    "ordinal_cramers_v_threshold": 0.15,
+    "ordinal_encoded": {
+      "complain": {
+        "cramers_v_from_eda": 0.25,
+        "decision": "engineer_ordinal \u2014 V=0.250 >= threshold 0.15",
+        "churn_rate_per_category": {
+          "0": 0.1122,
+          "1": 0.3126
+        }
+      },
+      "preferred_order_cat": {
+        "cramers_v_from_eda": 0.226,
+        "decision": "engineer_ordinal \u2014 V=0.226 >= threshold 0.15. Mobile churn 27.4% vs Grocery 4.9% \u2014 strong spread.",
+        "churn_rate_per_category": {
+          "Fashion": 0.1567,
+          "Grocery": 0.0393,
+          "Laptop & Accessory": 0.1027,
+          "Mobile": 0.2747,
+          "Others": 0.0652
+        }
+      },
+      "marital_status": {
+        "cramers_v_from_eda": 0.183,
+        "decision": "engineer_ordinal \u2014 V=0.183 >= threshold 0.15. Single churn 26.7% vs Married 11.5%.",
+        "churn_rate_per_category": {
+          "Divorced": 0.1446,
+          "Married": 0.1158,
+          "Single": 0.2679
+        }
+      }
+    },
+    "one_hot_encoded": {
+      "gender": "V=0.029 < threshold 0.15 \u2192 one-hot",
+      "preferred_payment_mode": "V=0.096 < threshold 0.15 \u2192 one-hot",
+      "preferred_login_device": "V=0.051 < threshold 0.15 \u2192 one-hot"
+    },
+    "passthrough_numeric": {
+      "city_tier": "V=0.085, already ordinal (1<2<3), passthrough"
+    }
+  },
+  "fitted_thresholds": {
+    "warehouse_log_median": 2.7081,
+    "address_iqr_cap": 12.0,
+    "tenure_new_cutoff": 6,
+    "tenure_growing_cutoff": 24,
+    "is_new_customer_cutoff": 6,
+    "app_engagement_bins": [
+      -0.001,
+      1.0,
+      3.0,
+      999.0
+    ],
+    "satisfaction_dissatisfied_threshold": 3
+  },
+  "feature_groups": {
+    "group1_financial_stress": [
+      "discount_dependency_ratio",
+      "cashback_per_order",
+      "order_value_declining_flag"
+    ],
+    "group2_service_dependency": [
+      "platform_embeddedness_score",
+      "is_cod_user",
+      "address_per_tenure_ratio"
+    ],
+    "group3_engagement_decay": [
+      "recency_risk_score",
+      "order_frequency_normalized",
+      "app_engagement_tier"
+    ],
+    "group4_contract_risk": [
+      "tenure_segment",
+      "is_new_customer",
+      "silent_dissatisfaction_flag",
+      "complaint_satisfaction_interaction",
+      "warehouse_distance_risk"
+    ],
+    "target_encoded_replacements": [
+      "complain_risk",
+      "order_cat_risk",
+      "marital_risk"
+    ]
+  }
+}
