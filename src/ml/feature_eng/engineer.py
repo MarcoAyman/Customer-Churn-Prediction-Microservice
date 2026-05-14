@@ -343,6 +343,71 @@ class FeatureEngineer(SignalLogger):
         self._signal("Writing to", str(output_path), "feature_engineering_config.json")
         return config
 
+    @classmethod
+    def from_config(cls, config_path: "str | Path") -> "FeatureEngineer":
+        """
+        Reconstruct FeatureEngineer from feature_engineering_config.json.
+        Used by the production API — no training data needed.
+
+        During training: engineer.fit(df_train) learns rates from data.
+        During inference: there is no training data available.
+        from_config() restores the fitted parameters from the saved JSON
+        so transform() can be called without ever calling fit().
+
+        Without this, the API would apply different feature transformations
+        than those used during training — causing training-serving skew.
+
+        Input:
+            config_path: path to feature_engineering_config.json
+                         downloaded from HF Hub on API startup
+
+        Output:
+            FeatureEngineer with _is_fitted=True, ready to call transform()
+
+        Restores:
+            _target_rates         — churn rate per category (complain, order_cat, marital)
+            _warehouse_log_median — log-median threshold fitted on X_train
+            _address_iqr_cap      — IQR cap fitted on X_train
+        """
+        config_path = Path(config_path)
+        if not config_path.exists():
+            raise FileNotFoundError(
+                f"feature_engineering_config.json not found at {config_path}.\n"
+                "Was it downloaded from HF Hub correctly?"
+            )
+
+        with open(config_path) as f:
+            config = json.load(f)
+
+        engineer = cls()
+
+        # ── Restore target encoding rates ─────────────────────────────────────
+        # Computed during fit(df_train) and saved to config.
+        # JSON keys are always strings — convert complain keys to int (0/1)
+        # because the complain column in the DataFrame has int values.
+        ordinal = config["encoding_decisions"]["ordinal_encoded"]
+
+        engineer._target_rates["complain"] = {
+            int(k): v
+            for k, v in ordinal["complain"]["churn_rate_per_category"].items()
+        }
+        # preferred_order_cat and marital_status keys are strings ("Mobile",
+        # "Single", etc.) — matching actual string values in the DataFrame.
+        engineer._target_rates["preferred_order_cat"] = (
+            ordinal["preferred_order_cat"]["churn_rate_per_category"]
+        )
+        engineer._target_rates["marital_status"] = (
+            ordinal["marital_status"]["churn_rate_per_category"]
+        )
+
+        # ── Restore fitted thresholds ──────────────────────────────────────────
+        thresholds = config["fitted_thresholds"]
+        engineer._warehouse_log_median = float(thresholds["warehouse_log_median"])
+        engineer._address_iqr_cap      = float(thresholds["address_iqr_cap"])
+
+        engineer._is_fitted = True
+        return engineer
+
     # ────────────────────────────────────────────────────────────────────────
     # PRIVATE — target encoding
     # ────────────────────────────────────────────────────────────────────────
