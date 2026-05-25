@@ -1,0 +1,180 @@
+# .github/workflows/batch_scoring.yml
+#
+# Automated batch scoring for ChurnGuard — runs every 20 days.
+#
+# WHAT IT DOES:
+#   1. Warms up the Render API (prevent cold start during batch)
+#   2. Runs scripts/run_batch_scoring.py on a GitHub-hosted Ubuntu runner
+#      → Downloads production model from HuggingFace Hub
+#      → Connects to Supabase and fetches all eligible customers
+#        (tenure >= 1 month, order_count >= 1, not scored in 18 days)
+#      → Scores all eligible customers in chunks of 500
+#      → Writes predictions to Supabase.predictions table
+#      → Checks PSI drift vs training reference distribution
+#      → Updates Supabase.batch_runs with run summary
+#   3. Opens a GitHub Issue if drift is detected (PSI > 0.20)
+#
+# RENDER IS NOT USED FOR BATCH SCORING:
+#   Batch scoring runs on GitHub's Ubuntu VM — not on Render.
+#   Render only hosts the FastAPI API for single predictions and dashboard data.
+#   Both Render and the batch job connect to the same Supabase database.
+#
+# SETUP (one-time):
+#   GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+#   Add these secrets:
+#     DATABASE_URL        ← same value as in your .env file
+#     HUGGINGFACE_TOKEN   ← same value as in your .env file
+#     RENDER_API_URL      ← your Render URL e.g. https://churnguard-api.onrender.com
+#
+# MANUAL TRIGGER:
+#   GitHub repo → Actions tab → Batch Scoring → Run workflow
+#   This runs the full batch immediately, on demand.
+
+name: Batch Scoring
+
+on:
+  schedule:
+    # Every 20 days at 02:00 UTC
+    # Cron runs on day 1, 21 of every month (approximately every 20 days)
+    # Adjust the day numbers if you want a different schedule
+    - cron: '0 2 1,21 * *'
+
+  # Allow manual trigger from the GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      skip_drift:
+        description: 'Skip PSI drift check (yes/no)'
+        required: false
+        default: 'no'
+
+jobs:
+  batch-score:
+    name: Score All Eligible Customers
+    runs-on: ubuntu-latest
+    timeout-minutes: 30     # batch scoring takes ~4 min — 30 min is a safe ceiling
+
+    steps:
+
+      # ── 1. Checkout the repo ────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Set up Python ────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'     # cache pip packages between runs to speed up installs
+
+      # ── 3. Install dependencies ─────────────────────────────────────────────
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── 4. Warm up Render API ───────────────────────────────────────────────
+      # Render free tier sleeps after 15 min of inactivity.
+      # A cold Render API is not involved in batch scoring itself,
+      # but we warm it now so the SSE batch_completed event is delivered
+      # to the dashboard immediately when the batch finishes.
+      - name: Warm up Render API
+        run: |
+          echo "Pinging Render to prevent cold start..."
+          for i in 1 2 3; do
+            HTTP_STATUS=$(curl \
+              -s -o /dev/null \
+              -w "%{http_code}" \
+              --max-time 65 \
+              "${{ secrets.RENDER_API_URL }}/api/v1/health" || echo "000")
+
+            echo "Attempt $i: HTTP $HTTP_STATUS"
+
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✓ Render is awake"
+              break
+            fi
+
+            echo "Render not ready yet — waiting 15s before retry..."
+            sleep 15
+          done
+
+      # ── 5. Run batch scoring ────────────────────────────────────────────────
+      - name: Run batch scoring
+        id: batch
+        run: |
+          # Build the command — add --skip-drift if manually triggered with skip_drift=yes
+          CMD="python scripts/run_batch_scoring.py --triggered-by github_actions"
+
+          if [ "${{ github.event.inputs.skip_drift }}" = "yes" ]; then
+            CMD="$CMD --skip-drift"
+            echo "Drift check disabled for this run"
+          fi
+
+          echo "Running: $CMD"
+          $CMD
+
+          # Capture exit code
+          EXIT_CODE=$?
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+
+          # Exit code 0 = success, no drift
+          # Exit code 2 = success, drift detected
+          # Exit code 1 = error
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "status=success_no_drift" >> $GITHUB_OUTPUT
+          elif [ $EXIT_CODE -eq 2 ]; then
+            echo "status=drift_detected" >> $GITHUB_OUTPUT
+            exit 0   # treat drift as a warning, not a failure
+          else
+            echo "status=error" >> $GITHUB_OUTPUT
+            exit 1   # real error — fail the job
+          fi
+
+        env:
+          DATABASE_URL:       ${{ secrets.DATABASE_URL }}
+          HUGGINGFACE_TOKEN:  ${{ secrets.HUGGINGFACE_TOKEN }}
+
+      # ── 6. Open GitHub Issue on drift ───────────────────────────────────────
+      # If PSI > 0.20 on any feature, open a GitHub Issue as the drift alert.
+      # No Slack or email setup needed — GitHub Issues are the audit trail.
+      - name: Open drift alert issue
+        if: steps.batch.outputs.status == 'drift_detected'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const today = new Date().toISOString().split('T')[0]
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              title: `⚠️ Drift Alert — ${today}`,
+              body: `## ChurnGuard Drift Alert\n\n` +
+                    `PSI > 0.20 detected on one or more features during the scheduled batch run.\n\n` +
+                    `**Date:** ${today}\n` +
+                    `**Triggered by:** ${context.eventName}\n\n` +
+                    `### What to do\n\n` +
+                    `1. Check Supabase \`drift_reports\` table for the specific features and PSI values\n` +
+                    `2. Review the batch scoring log in this Actions run for PSI details\n` +
+                    `3. Evaluate whether retraining is warranted\n` +
+                    `4. If retraining: run \`python scripts/run_training.py\` locally\n\n` +
+                    `### PSI Interpretation\n\n` +
+                    `| PSI range | Meaning |\n` +
+                    `|-----------|--------|\n` +
+                    `| < 0.10 | No significant change |\n` +
+                    `| 0.10–0.20 | Moderate change, monitor |\n` +
+                    `| > 0.20 | Significant shift — retrain candidate |\n\n` +
+                    `> Predictions for this batch were still written to Supabase.\n` +
+                    `> The model is still serving — drift is a warning, not a failure.`,
+              labels: ['drift-alert', 'mlops']
+            })
+            console.log('Drift alert issue created')
+
+      # ── 7. Summary ──────────────────────────────────────────────────────────
+      - name: Print summary
+        if: always()
+        run: |
+          echo ""
+          echo "═══════════════════════════════════════════"
+          echo " BATCH SCORING WORKFLOW COMPLETE"
+          echo "═══════════════════════════════════════════"
+          echo " Status: ${{ steps.batch.outputs.status }}"
+          echo " Run:    ${{ github.run_id }}"
+          echo " Logs:   ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "═══════════════════════════════════════════"
